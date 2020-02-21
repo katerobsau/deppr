@@ -31,8 +31,8 @@
 #'
 #' set.seed(1)
 #' new_dates = setdiff(dates, sampled_dates) %>% lubridate::as_date()
-#' sampled_dates <- sample_schaake_dates(num_draws = 3, dates = new_dates, date_val = date_val, window = 7)
-#' sampled_dates
+#' new_sampled_dates <- sample_schaake_dates(num_draws = 3, dates = new_dates, date_val = date_val, window = 7)
+#' new_sampled_dates
 #'
 #' @export
 sample_schaake_dates <- function(num_draws, dates, date_val, window = 7){

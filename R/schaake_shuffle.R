@@ -39,7 +39,7 @@
 #'
 #' d <- 10  # number of dimensions
 #' m <- 50  # number of samples from multivariate forecast distribution
-
+#'
 #' mu0 <- rep(0, d)
 #' mu <- rep(1, d)
 #' S0 <- S <- diag(d)
@@ -47,8 +47,8 @@
 #' S0[S0==0] <- 0.2
 #'
 #' # generate samples from multivariate normal distributions
-#' obs <- drop(mu0 + rnorm(d) \%*\% chol(S0))
-#' climate_example <- replicate(m, drop(mu + rnorm(d) \%*\% chol(S)))
+#' obs <- drop(mu0 + rnorm(d) %*% chol(S0))
+#' climate_example <- replicate(m, drop(mu + rnorm(d) %*% chol(S)))
 #'
 #' forecast_example <- matrix(mu0 + rnorm(d*m), nrow = d, ncol = d)
 #'
@@ -59,6 +59,7 @@ schaake_shuffle <- function(X, Y){
 
   if(any(is.na(X))) stop("X should not contain missing values")
   if(any(is.na(Y))) stop("Y should not contain missing values")
+  if(all(dim(X) == dim(Y))) stop("the dimensions of X and Y should match")
 
   Chi = sort_members(X)
   # gamma = sort_members(Y)
