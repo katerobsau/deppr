@@ -37,8 +37,8 @@
 #' # code for this example was based on the function vs_sample()
 #' # in the scoringRules package
 #'
-#' d <- 10  # number of dimensions
-#' m <- 50  # number of samples from multivariate forecast distribution
+#' d <- 3  # number of dimensions
+#' m <- 5  # number of samples from multivariate forecast distribution
 #'
 #' mu0 <- rep(0, d)
 #' mu <- rep(1, d)
@@ -50,7 +50,7 @@
 #' obs <- drop(mu0 + rnorm(d) %*% chol(S0))
 #' climate_example <- replicate(m, drop(mu + rnorm(d) %*% chol(S)))
 #'
-#' forecast_example <- matrix(mu0 + rnorm(d*m), nrow = d, ncol = d)
+#' forecast_example <- matrix(mu0 + rnorm(d*m), nrow = d, ncol = m)
 #'
 #' schaake_shuffle(X = forecast_example, Y = climate_example)
 #'

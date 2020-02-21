@@ -27,9 +27,9 @@
 #' @examples
 #'
 #' pars <- data.frame(mu = c(1,2), sigma  = c(1,1))
-#' sample_members_norm(5,  pars,  'R')
-#' sample_members_norm(5,  pars,  'Q')
-#' sample_members_norm(5,  pars,  'S')
+#' sample_ecc_members_norm(5,  pars,  'R')
+#' sample_ecc_members_norm(5,  pars,  'Q')
+#' sample_ecc_members_norm(5,  pars,  'S')
 #'
 #'@export
 sample_ecc_members_norm <- function(num_members, pars, draw_type = "R"){

@@ -35,8 +35,8 @@
 #' # code for this example was based on the function vs_sample()
 #' # in the scoringRules package
 #'
-#' d <- 10  # number of dimensions
-#' m <- 50  # number of ensemble members
+#' d <- 3  # number of dimensions
+#' m <- 5  # number of ensemble members
 
 #' mu0 <- rep(0, d)
 #' mu <- rep(1, d)
@@ -45,21 +45,26 @@
 #' S0[S0==0] <- 0.2
 #'
 #' # generate samples from multivariate normal distributions
-#' obs <- drop(mu0 + rnorm(d) \%*\% chol(S0))
-#' raw_ensemble_example <- replicate(m, drop(mu + rnorm(d) \%*\% chol(S)))
+#' obs <- drop(mu0 + rnorm(d) %*% chol(S0))
+#' raw_ensemble <- replicate(m, drop(mu + rnorm(d) %*% chol(S)))
 #'
-#' pars = data.frame(mu = rep(mu0, d), sigma = rep(1, d))
-#' Y_forecast <- sample_members_norm(num_members = m,  pars,  draw_type)
+#' pars = data.frame(mu = mu0, sigma = rep(1, d))
+#' draw_type = 'R'
+#' univariate_forecast <- sample_ecc_members_norm(num_members = m,  pars,  draw_type)
 #'
-#' ecc(raw_ensemble_example, pars, 'R')
+#' apply_ecc_template(raw_ensemble, univariate_forecast)
 #'
 #' @export
 apply_ecc_template <- function(X_raw, Y_forecast){
+
+  if(any(is.na(X_raw))) stop("X_raw should not contain missing values")
+  if(any(is.na(Y_forecast))) stop("Y_forecast should not contain missing values")
+  if(!all(dim(X_raw) == dim(Y_forecast))) stop("the dimensions of X and Y should match")
 
   X_rank <- rank_members(X_raw)
   Y_sort <- sort_members(Y_forecast)
   Y_reordered <- reorder_members(Y_sort, X_rank)
 
-  return(X_reordered)
+  return(Y_reordered)
 
 }
