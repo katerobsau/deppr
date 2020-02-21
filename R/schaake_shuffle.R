@@ -21,6 +21,9 @@
 #' No missing values should be present in Y. Data imputation or date resampling
 #' should be used.
 #'
+#' This function is functionally the same as \code{apply_ecc_template()}, but to be
+#' consistent with the formulation in the orginal papers has different inputs.
+#'
 #' @author Kate Saunders
 #'
 #' @references
@@ -51,16 +54,16 @@
 #'
 #' schaake_shuffle(X = forecast_example, Y = climate_example)
 #'
+#'@export
 schaake_shuffle <- function(X, Y){
 
+  if(any(is.na(X))) stop("X should not contain missing values")
   if(any(is.na(Y))) stop("Y should not contain missing values")
 
   Chi = sort_members(X)
   # gamma = sort_members(Y)
-
   # B = order_members(Y_inter)
   B_map = rank_members(Y)
-
   X_ss = reorder_members(Chi, B_map)
 
   return(X_ss)

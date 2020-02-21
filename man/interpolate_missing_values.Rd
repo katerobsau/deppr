@@ -13,24 +13,28 @@ interpolate_missing_values(M)
 M with any missing values interpolated
 }
 \description{
-Occasionally missing observations are present in climatologically sample used in the
+Occasionally missing observations are present in observations sampled that are to be used in the
 Schaake shuffle. If only a few of observations are missing if can be useful to interpolate
-the missing values.
+the missing values, particularly if only a few dates are available for sampling.
 }
 \details{
-For each column with a missing observation, the next closest columns is found
-in terms of the mean square error. If this column has a valid observation in the same
+For each column with a missing observation, the next closest column is found
+in terms of the smallest mean square error. If this close column has a valid observation in the same
 row as the missing observation, then this value is used to interpolate the missing
-observation. This is a simple method of data imputation. Care should be taken that
+observation. This is a simple method of data imputation, M can be subsetted in
+such a way to improve the reliability of the imputed value. Care should be taken that
 the reason the observation was missing was not for a systematic reason.
 }
 \examples{
-
 M = matrix(c(1,2,3,1,NA,3,4,5,6), nrow = 3)
 interpolate_missing_values(M)
 
 M = matrix(c(-1,-2,-3,1,NA,3,4,5,6), nrow = 3)
 interpolate_missing_values(M)
+
+M_all = matrix(c(1, 2, 3, 7, 10, 1, NA, 3, 4, 5, 2, 3, 4, 5, 6), nrow = 5)
+interpolate_missing_values(M_all)
+interpolate_missing_values(M_all[1:3, ])
 
 }
 \author{

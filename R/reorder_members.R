@@ -6,7 +6,7 @@
 #' @param B is a matrix with common dimension to X, and contains order statsitics for
 #' reshuffling
 #'
-#' @return a reshufflied version of matrix according the order statistics given in B.
+#' @return a reshuffled version of matrix according the order statistics given in B.
 #'
 #' @details
 #' Each columns of X corresponds to an ensemble member. The order statistics in B are
@@ -21,6 +21,7 @@
 #' B = matrix(c(2,1,3, 3,2,1), nrow = 2, byrow = TRUE)
 #' reorder_members(X, B)
 #'
+#'@export
 reorder_members <- function(X, B){
 
   if(!is.matrix(X) | !is.matrix(B))

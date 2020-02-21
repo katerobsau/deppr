@@ -13,7 +13,7 @@ reorder_members(X, B)
 reshuffling}
 }
 \value{
-a reshufflied version of matrix according the order statistics given in B.
+a reshuffled version of matrix according the order statistics given in B.
 }
 \description{
 Reorders the row entries of a matrix using a template based on order statistics

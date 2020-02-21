@@ -1,17 +1,18 @@
 #' Function to rank, order or sort ensemble members
 #'
-#' Applies a function to rank, order or sort the ensemble members.
+#' Applies one of the functions rank, order or sort to the ensemble members.
 #'
 #' @param M is a matrix where the columns correspond to multivariate forecasts.
 #' @param type is a string of either 'rank', 'order' or 'sort'.
-#' This operation will is applied to the rows
+#' This operation is applied to the rows
 #'
-#' @return a matrix where the ensemble members in X have had the operation type applied
+#' @return a matrix where the ensemble members in M have been altered
+#' according to the function
 #'
 #' @details
-#' No missing values should be present in X.
+#' No missing values should be present in M.
 #'
-#' This function is internal and used within \code{schaake_shuffle()}
+#' This function is used within \code{schaake_shuffle()} and \code{ecc()}.
 #'
 #' @author Kate Saunders
 #'
@@ -22,6 +23,7 @@
 #' shuffle_members(M, 'order')
 #' shuffle_members(M, 'sort')
 #'
+#'@export
 shuffle_members <- function(M, type,  ...){
 
   M_new <- switch(type,

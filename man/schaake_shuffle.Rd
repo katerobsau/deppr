@@ -30,6 +30,9 @@ the function \code{sample_schaake_dates()}.
 
 No missing values should be present in Y. Data imputation or date resampling
 should be used.
+
+This function is functionally the same as \code{apply_ecc_template()}, but to be
+consistent with the formulation in the orginal papers has different inputs.
 }
 \examples{
 
