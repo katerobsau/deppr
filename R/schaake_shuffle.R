@@ -59,7 +59,7 @@ schaake_shuffle <- function(X, Y){
 
   if(any(is.na(X))) stop("X should not contain missing values")
   if(any(is.na(Y))) stop("Y should not contain missing values")
-  if(all(dim(X) == dim(Y))) stop("the dimensions of X and Y should match")
+  if(all(dim(X) != dim(Y))) stop("the dimensions of X and Y should match")
 
   Chi = sort_members(X)
   # gamma = sort_members(Y)
