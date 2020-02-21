@@ -13,7 +13,7 @@
 #'
 #' @details This function assumes the window of interest is in given in days
 #'
-#' @author Kate Saunders
+#' @author Kate Saunders and Kirien Whan
 #'
 #' @references
 #'

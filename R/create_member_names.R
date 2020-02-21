@@ -8,7 +8,7 @@
 #' (default  is 3)
 #' @return a vector containing the names of the ensemble members
 #'
-#' @author Kate Saunders
+#' @author Kate Saunders and Kirien Whan
 #'
 #' @examples
 #' create_member_names(prefix_string = "fc", num_members = 10)

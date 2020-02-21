@@ -19,7 +19,7 @@
 #' This function is functionally the same as \code{schaake_shuffle()}, but to be
 #' consistent with the formulation in the orginal papers has different inputs.
 #'
-#' @author Kate Saunders
+#' @author Kate Saunders and Kirien Whan
 #'
 #' @references
 #'

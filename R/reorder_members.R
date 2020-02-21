@@ -13,7 +13,7 @@
 #' generated from climatologically similar days to the forecast day.
 #' This function is internal and used within \code{schaake_shuffle()}
 #'
-#' @author Kate Saunders
+#' @author Kate Saunders and Kirien Whan
 #'
 #' @examples
 #'

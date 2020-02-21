@@ -24,7 +24,7 @@
 #' This function is functionally the same as \code{apply_ecc_template()}, but to be
 #' consistent with the formulation in the orginal papers has different inputs.
 #'
-#' @author Kate Saunders
+#' @author Kate Saunders and Kirien Whan
 #'
 #' @references
 #'

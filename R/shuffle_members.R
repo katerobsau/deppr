@@ -14,7 +14,7 @@
 #'
 #' This function is used within \code{schaake_shuffle()} and \code{ecc()}.
 #'
-#' @author Kate Saunders
+#' @author Kate Saunders and Kirien Whan
 #'
 #' @examples
 #'

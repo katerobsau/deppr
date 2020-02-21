@@ -12,7 +12,7 @@
 #' @return a matrix where the rows give the ensemble members sampled using
 #' the paremeters given by the the corresponding row of \code{pars}.
 #'
-#' @author Kate Saunders
+#' @author Kate Saunders and Kirien Whan
 #'
 #' @references
 #'

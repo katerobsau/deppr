@@ -15,7 +15,7 @@
 #' such a way to improve the reliability of the imputed value. Care should be taken that
 #' the reason the observation was missing was not for a systematic reason.
 #'
-#' @author Kate Saunders
+#' @author Kate Saunders and Kirien Whan
 #'
 #' @examples
 #' M = matrix(c(1,2,3,1,NA,3,4,5,6), nrow = 3)
