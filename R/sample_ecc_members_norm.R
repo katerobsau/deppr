@@ -32,27 +32,32 @@
 #' sample_ecc_members_norm(5,  pars,  'S')
 #'
 #'@export
-sample_ecc_members_norm <- function(num_members, pars, draw_type = "R"){
+sample_ecc_members_norm <- function(num_members, function_name, pars,
+                                    ecc_type){
 
-  if(draw_type == "R")
-    sampled_members <- mapply(rnorm, mean = pars$mu, sd = pars$sigma,
-                            MoreArgs = list(n = num_members))
+  simulated_members <- apply(pars, 1, function(row, n, ecc_type){
 
-  if(draw_type == "Q"){
-    quantiles <- (1:num_members) / (num_members + 1)
-    sampled_members <- mapply(qnorm, mean = pars$mu, sd = pars$sigma,
-                            MoreArgs = list(p = quantiles))
-  }
+    par_list = as.list(row)
+    if(ecc_type == "R") par_list$n = n
+    if(ecc_type == "Q") par_list$p = get_ecc_quantiles(n, "Q")
+    if(ecc_type == "S") par_list$p = get_ecc_quantiles(n, "S")
 
-  if(draw_type == "S"){
-    quantiles <- sapply(1:num_members,
-                        function(i){runif(1)/num_members + (i-1)/num_members})
-    sampled_members <- mapply(qnorm, mean = pars$mu, sd = pars$sigma,
-                            MoreArgs = list(p = quantiles))
-  }
+    simulated_values = do.call(what = function_name, args = par_list)
 
-  sampled_members <- sampled_members %>% t()
+    return(simulated_values)
 
-  return(sampled_members)
+  }, n = num_members, ecc_type) %>% t()
+
+  return(simulated_members)
 
 }
+
+get_ecc_quantiles <- function(m, ecc_type){
+  quantiles <- switch(ecc_type,
+    Q = (1:m)/(m + 1),
+    S = sapply(1:m, function(i){runif(1)/m + (i-1)/m})
+  )
+  return(quantiles)
+}
+get_ecc_quantiles(3, "S")
+get_ecc_quantiles(3, "S")
