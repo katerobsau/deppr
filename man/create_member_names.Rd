@@ -26,5 +26,5 @@ create_member_names(prefix_string = "fc", num_members = 10, width = 2)
 
 }
 \author{
-Kate Saunders
+Kate Saunders and Kirien Whan
 }

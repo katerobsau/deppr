@@ -38,5 +38,5 @@ interpolate_missing_values(M_all[1:3, ])
 
 }
 \author{
-Kate Saunders
+Kate Saunders and Kirien Whan
 }

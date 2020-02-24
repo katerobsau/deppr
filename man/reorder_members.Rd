@@ -31,5 +31,5 @@ reorder_members(X, B)
 
 }
 \author{
-Kate Saunders
+Kate Saunders and Kirien Whan
 }

@@ -33,5 +33,5 @@ shuffle_members(M, 'sort')
 
 }
 \author{
-Kate Saunders
+Kate Saunders and Kirien Whan
 }

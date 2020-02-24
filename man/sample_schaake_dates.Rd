@@ -46,5 +46,5 @@ space–time variability in forecasted precipitation and temperature fields."
 Journal of Hydrometeorology 5.1 (2004): 243-262.
 }
 \author{
-Kate Saunders
+Kate Saunders and Kirien Whan
 }
