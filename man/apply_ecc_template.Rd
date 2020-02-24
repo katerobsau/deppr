@@ -34,8 +34,8 @@ consistent with the formulation in the orginal papers has different inputs.
 # code for this example was based on the function vs_sample()
 # in the scoringRules package
 
-d <- 10  # number of dimensions
-m <- 50  # number of ensemble members
+d <- 3  # number of dimensions
+m <- 5  # number of ensemble members
 mu0 <- rep(0, d)
 mu <- rep(1, d)
 S0 <- S <- diag(d)
@@ -43,13 +43,14 @@ S[S==0] <- 0.1
 S0[S0==0] <- 0.2
 
 # generate samples from multivariate normal distributions
-obs <- drop(mu0 + rnorm(d) \\\%*\\\% chol(S0))
-raw_ensemble_example <- replicate(m, drop(mu + rnorm(d) \\\%*\\\% chol(S)))
+obs <- drop(mu0 + rnorm(d) \%*\% chol(S0))
+raw_ensemble <- replicate(m, drop(mu + rnorm(d) \%*\% chol(S)))
 
-pars = data.frame(mu = rep(mu0, d), sigma = rep(1, d))
-Y_forecast <- sample_members_norm(num_members = m,  pars,  draw_type)
+pars = data.frame(mu = mu0, sigma = rep(1, d))
+draw_type = 'R'
+univariate_forecast <- sample_ecc_members_norm(num_members = m,  pars,  draw_type)
 
-ecc(raw_ensemble_example, pars, 'R')
+apply_ecc_template(raw_ensemble, univariate_forecast)
 
 }
 \references{
@@ -62,5 +63,5 @@ from a calibrated ensemble forecast distribution." Journal of Hydrometeorology
 17.9 (2016): 2405-2417.
 }
 \author{
-Kate Saunders
+Kate Saunders and Kirien Whan
 }
