@@ -1,15 +1,16 @@
 #' Creates a vector of quantiles
 #'
-#' This function produces the qunatilesf or For ECC-Q (uniform  quantiles) or
-#' ECC-S (jittered quantiles).
+#' This function produces qunatiles for ECC-R (random qunatiles),
+#' ECC-Q (uniform  quantiles) or ECC-S (jittered quantiles).
 #'
 #' @param m number of members in the ensemble (must be an integer)
-#' @param ecc_type one of the characters \code{'Q'} or \code{'S'}.
+#' @param ecc_type one of the characters \code{'R'}, \code{'Q'} or \code{'S'}.
 #' This character corresponds to the desired ECC sampling method
 #'
 #' @return a vector of sample quantiles
 #'
-#' @details If the \code{ecc_type} is \code{'Q'} then qunatiles are equally sampled.
+#' @details If the \code{ecc_type} is \code{'R'} then quantiles are randomly sampled.
+#' If the \code{ecc_type} is \code{'Q'} then qunatiles are equally sampled.
 #' If the \code{ecc_type} is \code{'S'} then the quantiles are jittered.
 #'
 #' @author Kate Saunders and Kirien Whan
@@ -27,11 +28,13 @@
 #' @seealso \code{\link{sample_ecc_members}}
 #'
 #' @examples
-#' get_ecc_quantiles(3, "Q")
+#' get_ecc_quantiles(3, "R")
+#' get_ecc_quantiles(4, "Q")
 #' get_ecc_quantiles(5, "S")
 #'
 get_ecc_quantiles <- function(m, ecc_type){
   quantiles <- switch(ecc_type,
+                      R = sort(runif(m)),
                       Q = (1:m)/(m + 1),
                       S = sapply(1:m, function(i){runif(1)/m + (i-1)/m})
   )
