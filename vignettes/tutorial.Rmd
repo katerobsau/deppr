@@ -1,0 +1,125 @@
+---
+title: "Multivariate Post-processing"
+author: "Kate Saunders"
+date: "`r Sys.Date()`"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Multivariate Post-processing}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+# Statistical post-processing
+
+## Ensemble Forecasting
+
+What is ensemble forecasting:
+* Intial conditions based on current weather observations
+* Run the model to forecast the future weather
+* Climate is highly complex
+* Sampling different paths throughout the space
+* Using those to give us an idea of the distribution for the future weather
+* Key difference is deterministic vs probabilistic forecasting
+* Deterministic is a boolean - will it rain, or won't it rain
+* Probabilitic is when you give a distribution, so you can understand the uncertainty
+* 70% chance it will rain, possible rainfall between 4 - 15 mm
+* People can make better decisions with probabilistic forecasts
+
+* Problem is we don't know the true distribution
+* Use models
+* Sample space is large, and we can't run simulations to cover the whole space
+* Have to use these models to make decisions
+(Trajectory picture)
+
+#
+
+## Statistical Post-processing
+
+* Climate models have errors
+* Increasing the climate model resolution can decrease these errors
+* However, the errors will always exist as the underyling model physics is an approximations to the true climate physics
+(Nice to insert a figure of model approximations)
+
+* We correct for these errors using statistics, this is what is known as statistical post-processing.
+
+* Typically the first step in statistical post-processing is to correct the univariate marginal distributions. 
+(Give crude example, showing bias and spread correction)
+
+* The next step is to restore the dependence structure between related variables
+* This package gives many of the basic methods for restoring dependence between variables in a post-processed ensemble forecasts
+(Show the mapping from Scheizfik)
+
+# Methods for restoring dependence
+
+## Empirical Copula Coupling
+
+## Schaake Shuffle 
+
+### Standard
+
+### Climatological 
+
+### Analogogs
+
+### Minimum Divergence
+
+## Cannon - MbnR
+
+## Optimal Assignment
+
+<!-- What happens if I change something here  -->
+
+<!-- Vignettes are long form documentation commonly included in packages. Because they are part of the distribution of the package, they need to be as compact as possible. The `html_vignette` output type provides a custom style sheet (and tweaks some options) to ensure that the resulting html is as small as possible. The `html_vignette` format: -->
+
+<!-- - Never uses retina figures -->
+<!-- - Has a smaller default figure size -->
+<!-- - Uses a custom CSS stylesheet instead of the default Twitter Bootstrap style -->
+
+<!-- ## Vignette Info -->
+
+<!-- Note the various macros within the `vignette` section of the metadata block above. These are required in order to instruct R how to build the vignette. Note that you should change the `title` field and the `\VignetteIndexEntry` to match the title of your vignette. -->
+
+<!-- ## Styles -->
+
+<!-- The `html_vignette` template includes a basic CSS theme. To override this theme you can specify your own CSS in the document metadata as follows: -->
+
+<!--     output:  -->
+<!--       rmarkdown::html_vignette: -->
+<!--         css: mystyles.css -->
+
+<!-- ## Figures -->
+
+<!-- The figure sizes have been customised so that you can easily put two images side-by-side.  -->
+
+<!-- ```{r, fig.show='hold'} -->
+<!-- plot(1:10) -->
+<!-- plot(10:1) -->
+<!-- ``` -->
+
+<!-- You can enable figure captions by `fig_caption: yes` in YAML: -->
+
+<!--     output: -->
+<!--       rmarkdown::html_vignette: -->
+<!--         fig_caption: yes -->
+
+<!-- Then you can use the chunk option `fig.cap = "Your figure caption."` in **knitr**. -->
+
+<!-- ## More Examples -->
+
+<!-- You can write math expressions, e.g. $Y = X\beta + \epsilon$, footnotes^[A footnote here.], and tables, e.g. using `knitr::kable()`. -->
+
+<!-- ```{r, echo=FALSE, results='asis'} -->
+<!-- knitr::kable(head(mtcars, 10)) -->
+<!-- ``` -->
+
+<!-- Also a quote using `>`: -->
+
+<!-- > "He who gives up [code] safety for [code] speed deserves neither." -->
+<!-- ([via](https://twitter.com/hadleywickham/status/504368538874703872)) -->
