@@ -57,8 +57,6 @@ sample_ecc_members <- function(num_members, function_type, pars,
 #     if(substr(function_type, 1,1) ==  "q" & !(ecc_type %in% c('Q', 'S')))
 #       warning("Check: When the function_type starts with q, the ecc_type is commonly Q or S")
 
-# also like to add flexibility so the function name can change
-
   simulated_members <- apply(pars, 1, function(row, n, ecc_type, ...){
 
     par_list = as.list(row)
@@ -75,3 +73,4 @@ sample_ecc_members <- function(num_members, function_type, pars,
   return(simulated_members)
 
 }
+
