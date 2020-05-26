@@ -14,39 +14,42 @@ knitr::opts_chunk$set(
   collapse = TRUE,
   comment = "#>"
 )
+library(tidyverse)
+library(knitr)
+library(kableExtra)
 ```
 
-# Statistical post-processing
+## Introduction
 
-## Ensemble Forecasting
+### Ensemble Forecasting
 
 What is ensemble forecasting:
-* Intial conditions based on current weather observations
-* Run the model to forecast the future weather
-* Climate is highly complex
-* Sampling different paths throughout the space
-* Using those to give us an idea of the distribution for the future weather
-* Key difference is deterministic vs probabilistic forecasting
-* Deterministic is a boolean - will it rain, or won't it rain
-* Probabilitic is when you give a distribution, so you can understand the uncertainty
-* 70% chance it will rain, possible rainfall between 4 - 15 mm
-* People can make better decisions with probabilistic forecasts
 
-* Problem is we don't know the true distribution
-* Use models
-* Sample space is large, and we can't run simulations to cover the whole space
-* Have to use these models to make decisions
+* Intial conditions based on current weather observations
+* Run the physcial model to forecast the future weather
+* Climate is highly complex, so we can't observe the full distribution
+* Instead we sampling different paths throughout the climate space to generate our forecasts
+* These forecasts give us an idea of the distribution of the future weather
+* Use these forecasts to make decisions
 (Trajectory picture)
 
-#
 
-## Statistical Post-processing
+* Can then forecast if will it rain, or won't it rain (deterministic)
+* More useful is given a distribution and including uncertainty (probabilistic)
+* 70% chance it will rain, possible rainfall between 4 - 15 mm
+* People can make better decisions with probabilistic forecasts
+* For forecasting the key difference is deterministic vs probabilistic 
+
+### Statistical Post-processing
+
+<!-- * Post-processing is used to improve the forecasts because we don't know the true distribution -->
+<!-- * Sample space is large, and we can't run simulations to cover the whole space -->
+<!-- * Note, even if we could observe the full distribution, there will always be errors approximating the real world with a model  -->
 
 * Climate models have errors
 * Increasing the climate model resolution can decrease these errors
 * However, the errors will always exist as the underyling model physics is an approximations to the true climate physics
 (Nice to insert a figure of model approximations)
-
 * We correct for these errors using statistics, this is what is known as statistical post-processing.
 
 * Typically the first step in statistical post-processing is to correct the univariate marginal distributions. 
@@ -54,25 +57,63 @@ What is ensemble forecasting:
 
 * The next step is to restore the dependence structure between related variables
 * This package gives many of the basic methods for restoring dependence between variables in a post-processed ensemble forecasts
-(Show the mapping from Scheizfik)
 
-# Methods for restoring dependence
+(Show the picture of mapping ie. similar to from Scheizfik '17)
 
-## Empirical Copula Coupling
+## General Set Up
 
-## Schaake Shuffle 
+We propose the follow standard data format for ease of post-processing. This may vary slightly from application.
 
-### Standard
+```{r echo = FALSE}
+variable_labels = 
+  c("FORECAST_DATE", "INIT_TIME", 
+    "LEAD_TIME", "LOCATION_REFERENCE", "ELEMENT", 
+    "OBSERVATION", "ENS1", "ENS2", "ENS*")
 
-### Climatological 
+variable_type = c("YMD", "HMS", 
+                  "HMS", "String", "String",
+                  "Numeric", "Numeric", "Numeric", "Numeric")
 
-### Analogogs
+variable_description = 
+  c("Date the forecast was issued", 
+    "Time the forecast was initialised", 
+    "Time until the forecast is observed",
+    "Station name, or a cooridnate reference",
+    "Meteorlogical variable, for example TEMP or PRCP",
+    "True Observation",
+    "Forecast given by Ensemble Member 1",
+    "Forecast given by Ensemble Member 2",
+    "etc. Forecast given by Ensemble Member *")
 
-### Minimum Divergence
+variable_table = data.frame("Name" = variable_labels, 
+                            "Description" = variable_description,
+                            "Type" = variable_type)
 
-## Cannon - MbnR
+kable(variable_table) %>%
+  kable_styling(bootstrap_options = c("striped", "hover"))
+```
 
-## Optimal Assignment
+The third column is gives the varaible data type. Here `YMD` stands for year, month, day, and `HMS` stands for hour, minutes, seconds. While base R caters for these date types via `POSIXct()`, we find the **lubridate** package offers more intuitive functions for dealing with date types.
+
+When we score a forecast, the `FORECAST_DATE` and `INIT_TIME` are normally fixed variables. Other variables for space (`LOCATION_REF`), time (`LEAD_TIME`) or intervariable (`ELEMENT`), all encode information about different types of dependence. For some applications, one or more of these columns may have constant entries. For generality, we suggest including these standard variables and using this general format even if those variables are fixed. How we use the non-fixed columns in the set of space, time or intervariable, will determine how we restore dependence to our perform the multivariate post-processing. 
+
+## Methods for restoring dependence
+
+### Empirical Copula Coupling
+
+### Schaake Shuffle 
+
+#### Standard
+
+#### Climatological 
+
+#### Analogogs
+
+#### Minimum Divergence
+
+### Cannon - MbnR
+
+### Optimal Assignment
 
 <!-- What happens if I change something here  -->
 
