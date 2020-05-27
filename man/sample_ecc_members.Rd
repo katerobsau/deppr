@@ -44,7 +44,7 @@ pars <- data.frame(mean = c(0,10), sd = c(1,1))
 sample_ecc_members(num_members,  rnorm, pars, 'R')
 
 num_members = 4
-pars <- data.frame(rate = c(1,2,3))
+pars <- data.frame(rate = c(1,2,3, NA))
 sample_ecc_members(num_members, rexp,  pars, 'R')
 
 }

@@ -5,13 +5,14 @@
 #' that is based on climatology.
 #'
 #' @param num_draws number of dates to samples
-#' @param dates vector of all possible dates that will be cross-referenced with the climate window
+#' @param dates vector of all possible dates where there are suitable observations. This vector will be cross-referenced with the climate window
 #' @param date_val date of the observation for which a similar climatology is required
 #' @param window integer that gives the radius of the date window, \code{date_val} +- \code{window} (unit is days)
 #'
 #' @return a vector of length \code{num_draws} that gives the sampled dates
 #'
-#' @details This function assumes the window of interest is in given in days
+#' @details This function assumes the window of interest is in given in number of days.
+#' The dates input is for handling dates with missing observations.
 #'
 #' @author Kate Saunders and Kirien Whan
 #'

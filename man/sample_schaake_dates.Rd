@@ -9,7 +9,7 @@ sample_schaake_dates(num_draws, dates, date_val, window = 7)
 \arguments{
 \item{num_draws}{number of dates to samples}
 
-\item{dates}{vector of all possible dates that will be cross-referenced with the climate window}
+\item{dates}{vector of all possible dates where there are suitable observations. This vector will be cross-referenced with the climate window}
 
 \item{date_val}{date of the observation for which a similar climatology is required}
 
@@ -24,7 +24,8 @@ These dates can be used in the Schaake shuffle to generate a dependence template
 that is based on climatology.
 }
 \details{
-This function assumes the window of interest is in given in days
+This function assumes the window of interest is in given in number of days.
+The dates input is for handling dates with missing observations.
 }
 \examples{
 date_val = lubridate::as_date("2019-01-01")
