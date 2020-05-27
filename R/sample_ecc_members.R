@@ -44,7 +44,7 @@
 #' sample_ecc_members(num_members,  rnorm, pars, 'R')
 #'
 #' num_members = 4
-#' pars <- data.frame(rate = c(1,2,3))
+#' pars <- data.frame(rate = c(1,2,3, NA))
 #' sample_ecc_members(num_members, rexp,  pars, 'R')
 #'
 #' @export
@@ -58,6 +58,9 @@ sample_ecc_members <- function(num_members, function_type, pars,
 #       warning("Check: When the function_type starts with q, the ecc_type is commonly Q or S")
 
   simulated_members <- apply(pars, 1, function(row, n, ecc_type, ...){
+
+    na_check <- any(is.na(row))
+    if(na_check) return(rep(NA, num_members))
 
     par_list = as.list(row)
     if(ecc_type == "R") par_list$n = n
