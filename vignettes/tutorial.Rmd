@@ -1,0 +1,166 @@
+---
+title: "Multivariate Post-processing"
+author: "Kate Saunders"
+date: "`r Sys.Date()`"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Multivariate Post-processing}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+library(tidyverse)
+library(knitr)
+library(kableExtra)
+```
+
+## Introduction
+
+### Ensemble Forecasting
+
+What is ensemble forecasting:
+
+* Intial conditions based on current weather observations
+* Run the physcial model to forecast the future weather
+* Climate is highly complex, so we can't observe the full distribution
+* Instead we sampling different paths throughout the climate space to generate our forecasts
+* These forecasts give us an idea of the distribution of the future weather
+* Use these forecasts to make decisions
+(Trajectory picture)
+
+
+* Can then forecast if will it rain, or won't it rain (deterministic)
+* More useful is given a distribution and including uncertainty (probabilistic)
+* 70% chance it will rain, possible rainfall between 4 - 15 mm
+* People can make better decisions with probabilistic forecasts
+* For forecasting the key difference is deterministic vs probabilistic 
+
+### Statistical Post-processing
+
+<!-- * Post-processing is used to improve the forecasts because we don't know the true distribution -->
+<!-- * Sample space is large, and we can't run simulations to cover the whole space -->
+<!-- * Note, even if we could observe the full distribution, there will always be errors approximating the real world with a model  -->
+
+* Climate models have errors
+* Increasing the climate model resolution can decrease these errors
+* However, the errors will always exist as the underyling model physics is an approximations to the true climate physics
+(Nice to insert a figure of model approximations)
+* We correct for these errors using statistics, this is what is known as statistical post-processing.
+
+* Typically the first step in statistical post-processing is to correct the univariate marginal distributions. 
+(Give crude example, showing bias and spread correction)
+
+* The next step is to restore the dependence structure between related variables
+* This package gives many of the basic methods for restoring dependence between variables in a post-processed ensemble forecasts
+
+(Show the picture of mapping ie. similar to from Scheizfik '17)
+
+## General Set Up
+
+We propose the follow standard data format for ease of post-processing. This may vary slightly from application.
+
+```{r echo = FALSE}
+variable_labels = 
+  c("FORECAST_DATE", "INIT_TIME", 
+    "LEAD_TIME", "LOCATION_REFERENCE", "ELEMENT", 
+    "OBSERVATION", "ENS1", "ENS2", "ENS*")
+
+variable_type = c("YMD", "HMS", 
+                  "HMS", "String", "String",
+                  "Numeric", "Numeric", "Numeric", "Numeric")
+
+variable_description = 
+  c("Date the forecast was issued", 
+    "Time the forecast was initialised", 
+    "Time until the forecast is observed",
+    "Station name, or a cooridnate reference",
+    "Meteorlogical variable, for example TEMP or PRCP",
+    "True Observation",
+    "Forecast given by Ensemble Member 1",
+    "Forecast given by Ensemble Member 2",
+    "etc. Forecast given by Ensemble Member *")
+
+variable_table = data.frame("Name" = variable_labels, 
+                            "Description" = variable_description,
+                            "Type" = variable_type)
+
+kable(variable_table) %>%
+  kable_styling(bootstrap_options = c("striped", "hover"))
+```
+
+The third column is gives the varaible data type. Here `YMD` stands for year, month, day, and `HMS` stands for hour, minutes, seconds. While base R caters for these date types via `POSIXct()`, we find the **lubridate** package offers more intuitive functions for dealing with date types.
+
+When we score a forecast, the `FORECAST_DATE` and `INIT_TIME` are normally fixed variables. Other variables for space (`LOCATION_REF`), time (`LEAD_TIME`) or intervariable (`ELEMENT`), all encode information about different types of dependence. For some applications, one or more of these columns may have constant entries. For generality, we suggest including these standard variables and using this general format even if those variables are fixed. How we use the non-fixed columns in the set of space, time or intervariable, will determine how we restore dependence to our perform the multivariate post-processing. 
+
+## Methods for restoring dependence
+
+### Empirical Copula Coupling
+
+### Schaake Shuffle 
+
+#### Standard
+
+#### Climatological 
+
+#### Analogogs
+
+#### Minimum Divergence
+
+### Cannon - MbnR
+
+### Optimal Assignment
+
+<!-- What happens if I change something here  -->
+
+<!-- Vignettes are long form documentation commonly included in packages. Because they are part of the distribution of the package, they need to be as compact as possible. The `html_vignette` output type provides a custom style sheet (and tweaks some options) to ensure that the resulting html is as small as possible. The `html_vignette` format: -->
+
+<!-- - Never uses retina figures -->
+<!-- - Has a smaller default figure size -->
+<!-- - Uses a custom CSS stylesheet instead of the default Twitter Bootstrap style -->
+
+<!-- ## Vignette Info -->
+
+<!-- Note the various macros within the `vignette` section of the metadata block above. These are required in order to instruct R how to build the vignette. Note that you should change the `title` field and the `\VignetteIndexEntry` to match the title of your vignette. -->
+
+<!-- ## Styles -->
+
+<!-- The `html_vignette` template includes a basic CSS theme. To override this theme you can specify your own CSS in the document metadata as follows: -->
+
+<!--     output:  -->
+<!--       rmarkdown::html_vignette: -->
+<!--         css: mystyles.css -->
+
+<!-- ## Figures -->
+
+<!-- The figure sizes have been customised so that you can easily put two images side-by-side.  -->
+
+<!-- ```{r, fig.show='hold'} -->
+<!-- plot(1:10) -->
+<!-- plot(10:1) -->
+<!-- ``` -->
+
+<!-- You can enable figure captions by `fig_caption: yes` in YAML: -->
+
+<!--     output: -->
+<!--       rmarkdown::html_vignette: -->
+<!--         fig_caption: yes -->
+
+<!-- Then you can use the chunk option `fig.cap = "Your figure caption."` in **knitr**. -->
+
+<!-- ## More Examples -->
+
+<!-- You can write math expressions, e.g. $Y = X\beta + \epsilon$, footnotes^[A footnote here.], and tables, e.g. using `knitr::kable()`. -->
+
+<!-- ```{r, echo=FALSE, results='asis'} -->
+<!-- knitr::kable(head(mtcars, 10)) -->
+<!-- ``` -->
+
+<!-- Also a quote using `>`: -->
+
+<!-- > "He who gives up [code] safety for [code] speed deserves neither." -->
+<!-- ([via](https://twitter.com/hadleywickham/status/504368538874703872)) -->

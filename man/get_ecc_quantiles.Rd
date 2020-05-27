@@ -9,8 +9,9 @@ get_ecc_quantiles(m, ecc_type)
 \arguments{
 \item{m}{number of members in the ensemble (must be an integer)}
 
-\item{ecc_type}{one of the characters \code{'R'}, \code{'Q'} or \code{'S'}.
-This character corresponds to the desired ECC sampling method}
+\item{ecc_type}{one of the characters \code{'R'}, \code{'Q'}, \code{'Q1'},
+or \code{'S'}. This character corresponds to the desired ECC sampling method.
+There are two types of equi-spaced quantiles, 'Q' and 'Q1'.}
 }
 \value{
 a vector of sample quantiles
@@ -22,6 +23,7 @@ ECC-Q (uniform  quantiles) or ECC-S (jittered quantiles).
 \details{
 If the \code{ecc_type} is \code{'R'} then quantiles are randomly sampled.
 If the \code{ecc_type} is \code{'Q'} then qunatiles are equally sampled.
+#' If the \code{ecc_type} is \code{'Q1'} then quantiles are equally sampled (Bröck et al. 2012)
 If the \code{ecc_type} is \code{'S'} then the quantiles are jittered.
 }
 \examples{
