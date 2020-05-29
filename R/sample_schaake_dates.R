@@ -35,6 +35,8 @@
 #' new_sampled_dates <- sample_schaake_dates(num_draws = 3, dates = new_dates, date_val = date_val, window = 7)
 #' new_sampled_dates
 #'
+#' insufficient_dates <- sample_schaake_dates(num_draws = 100, dates = new_dates, date_val = date_val, window = 7)
+#'
 #' @export
 sample_schaake_dates <- function(num_draws, dates, date_val, window = 7){
 
@@ -50,8 +52,10 @@ sample_schaake_dates <- function(num_draws, dates, date_val, window = 7){
     lubridate::as_date()
 
   # check sufficient dates for sampling
-  if(length(all_window_dates) < num_draws) return(rep(NA, num_draws))
-
+  if(length(all_window_dates) < num_draws){
+    warning(paste("Insufficent dates around", date_val, "for sampling, so returning NAs"))
+    return(rep(NA, num_draws))
+  }
   sampled_dates = sample(all_window_dates, num_draws)
 
   return(sampled_dates)

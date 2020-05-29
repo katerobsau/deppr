@@ -40,6 +40,8 @@ new_dates = setdiff(dates, sampled_dates) \%>\% lubridate::as_date()
 new_sampled_dates <- sample_schaake_dates(num_draws = 3, dates = new_dates, date_val = date_val, window = 7)
 new_sampled_dates
 
+insufficient_dates <- sample_schaake_dates(num_draws = 100, dates = new_dates, date_val = date_val, window = 7)
+
 }
 \references{
 Clark, Martyn, et al. "The Schaake shuffle: A method for reconstructing
