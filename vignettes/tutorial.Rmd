@@ -15,6 +15,7 @@ knitr::opts_chunk$set(
   comment = "#>"
 )
 library(tidyverse)
+library(lubridate)
 library(knitr)
 library(kableExtra)
 ```
@@ -67,7 +68,7 @@ We propose the follow standard data format for ease of post-processing. This may
 ```{r echo = FALSE}
 variable_labels = 
   c("FORECAST_DATE", "INIT_TIME", 
-    "LEAD_TIME", "LOCATION_REFERENCE", "ELEMENT", 
+    "LEAD_TIME", "LOCATION", "ELEMENT", 
     "OBSERVATION", "ENS1", "ENS2", "ENS*")
 
 variable_type = c("YMD", "HMS", 
@@ -78,7 +79,7 @@ variable_description =
   c("Date the forecast was issued", 
     "Time the forecast was initialised", 
     "Time until the forecast is observed",
-    "Station name, or a cooridnate reference",
+    "Station name, or a coordinate reference",
     "Meteorlogical variable, for example TEMP or PRCP",
     "True Observation",
     "Forecast given by Ensemble Member 1",
@@ -93,9 +94,69 @@ kable(variable_table) %>%
   kable_styling(bootstrap_options = c("striped", "hover"))
 ```
 
-The third column is gives the varaible data type. Here `YMD` stands for year, month, day, and `HMS` stands for hour, minutes, seconds. While base R caters for these date types via `POSIXct()`, we find the **lubridate** package offers more intuitive functions for dealing with date types.
+The third column is gives the varaible data type. Here `YMD` stands for year, month, day, and `HMS` stands for hour, minutes, seconds. 
 
-When we score a forecast, the `FORECAST_DATE` and `INIT_TIME` are normally fixed variables. Other variables for space (`LOCATION_REF`), time (`LEAD_TIME`) or intervariable (`ELEMENT`), all encode information about different types of dependence. For some applications, one or more of these columns may have constant entries. For generality, we suggest including these standard variables and using this general format even if those variables are fixed. How we use the non-fixed columns in the set of space, time or intervariable, will determine how we restore dependence to our perform the multivariate post-processing. 
+When we score a forecast, the `FORECAST_DATE` and `INIT_TIME` are normally fixed variables. Other variables for space (`LOCATION`), time (`LEAD_TIME`) or intervariable (`ELEMENT`), all encode information about different types of dependence and are important for restoring dependence during multivariate post-processing. For some applications, one or more of these columns may have constant entries. For generality, we suggest including these standard variables and using this general format even if those variables are fixed.
+
+### Quick comment on dates 
+
+While base R caters for date types via `POSIXct()` and associated functions, the **lubridate** package offers broadly equaivalent functionality in a clearer and more concise way. The **lubridate** packge therefore offers a much easier way to process dates. It is therefore strongly suggested the columns of `FORECAST_DATE`, `INIT_TIME` and `LEAD_TIME` are converted into lubridate objects. 
+
+```{r}
+## Example converting different date strings to a date object
+sample_dates = c("20200601", "2020-06-02", "2020/06/03")
+lubridate_dates = lubridate::as_date(sample_dates)
+print(lubridate_dates)
+
+## Example creating an hms() object from an initialisation string
+sample_init_times = c("0:0:0", "12:0:0")
+lubridate_init_times = lubridate::hms(sample_init_times)
+print(lubridate_init_times)
+
+## Another example for hms() using an numeric input
+sample_lead_times = c(0,6)
+lubridate_lead_times = paste0(sample_lead_times, ":0:0") %>%
+  lubridate::hms()
+print(lubridate_lead_times)
+```
+
+For the columns of `INIT_TIME` and `LEAD_TIME` it is convienent to convert the `lubridate::hms()` objects into `lubridate::as.duration()`. This is for two reasons:
+
+(i) Then the observation date can easily be obtained through the summation of `FORECAST_DATE`, `INIT_TIME` and `LEAD_TIME` if these variables are all date classes.
+
+```{r}
+lubridate_dates[1] + lubridate_init_times[2] + lubridate_lead_times[2]
+```
+
+(ii) The suite of join operations in the **dplyr** package can be used. Notice the difference between these these two join opertions in the following example. In the first example, the common entries are not correctly recognised. 
+
+```{r}
+## without lubridate::as.duration()
+df1 <- df2 <- data.frame(
+  INIT_TIME = lubridate_init_times, 
+  LEAD_TIME = lubridate_lead_times)
+dplyr::full_join(df1, df2, by = c("INIT_TIME", "LEAD_TIME"))
+
+## with lubridate::as.duration()
+df1 <- df2 <- data.frame(
+  INIT_TIME = lubridate::as.duration(lubridate_init_times), 
+  LEAD_TIME = lubridate::as.duration(lubridate_lead_times))
+full_join(df1, df2, by = c("INIT_TIME", "LEAD_TIME"))
+```
+
+Using a duration for the columns of `INIT_TIME` and `LEAD_TIME` mostly gets around some sticky issues commonly encountered when using date objects. An exception is `bind_rows()`, which doesn't respect the duration class and instead reverts the entries to numeric types befor performing vector operations. An easy work around is to just convert the numeric types back into durations. 
+
+```{r}
+bind_rows(df1[1,], df1[2,]) 
+
+# versus
+
+bind_rows(df1[1,], df1[2,]) %>%
+  dplyr::mutate(LEAD_TIME = lubridate::as.duration(LEAD_TIME),
+                INIT_TIME = lubridate::as.duration(INIT_TIME))
+```
+
+When possible one could just use `rbind()` instead to avoid this issue. However,  `rbind()` won't work if the names of the two data frames are different and that is when `bind_rows()` may need to be called.
 
 ## Methods for restoring dependence
 
