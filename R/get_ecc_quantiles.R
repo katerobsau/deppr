@@ -36,10 +36,10 @@
 #'
 get_ecc_quantiles <- function(m, ecc_type){
   quantiles <- switch(ecc_type,
-                      R = sort(runif(m)),
+                      R = runif(m),
                       Q = (1:m)/(m + 1),
                       S = sapply(1:m, function(i){runif(1)/m + (i-1)/m}),
-                      Q1 = (1:m - 0.5)/(m))
+                      Q1 = (1:m - 0.5)/m)
   return(quantiles)
 }
 
