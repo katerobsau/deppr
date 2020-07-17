@@ -50,7 +50,7 @@
 #'
 #' pars = data.frame(mu = mu0, sigma = rep(1, d))
 #' draw_type = 'R'
-#' univariate_forecast <- sample_ecc_members_norm(num_members = m,  pars,  draw_type)
+#' univariate_forecast <- sample_ecc_members(num_members = m,  rnorm, pars,  draw_type)
 #'
 #' apply_ecc_template(raw_ensemble, univariate_forecast)
 #'
