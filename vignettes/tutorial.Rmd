@@ -18,6 +18,7 @@ library(tidyverse)
 library(lubridate)
 library(knitr)
 library(kableExtra)
+library(depPPR)
 ```
 
 ## Introduction
@@ -63,7 +64,7 @@ What is ensemble forecasting:
 
 ## General Set Up
 
-We propose the follow standard data format for ease of post-processing. This may vary slightly from application.
+We propose the follow standard column types for ease of post-processing. These columns may vary slightly between application.
 
 ```{r echo = FALSE}
 variable_labels = 
@@ -90,34 +91,34 @@ variable_table = data.frame("Name" = variable_labels,
                             "Description" = variable_description,
                             "Type" = variable_type)
 
-kable(variable_table) %>%
+kable(variable_table %>% dplyr::select(-Type)) %>%
   kable_styling(bootstrap_options = c("striped", "hover"))
 ```
 
-The third column is gives the varaible data type. Here `YMD` stands for year, month, day, and `HMS` stands for hour, minutes, seconds. 
+<!-- The third column is gives the varaible data type. Here `YMD` stands for year, month, day, and `HMS` stands for hour, minutes, seconds.  -->
 
-When we score a forecast, the `FORECAST_DATE` and `INIT_TIME` are normally fixed variables. Other variables for space (`LOCATION`), time (`LEAD_TIME`) or intervariable (`ELEMENT`), all encode information about different types of dependence and are important for restoring dependence during multivariate post-processing. For some applications, one or more of these columns may have constant entries. For generality, we suggest including these standard variables and using this general format even if those variables are fixed.
+When we score a forecast, the `FORECAST_DATE` and `INIT_TIME` are normally fixed variables. Other variables for `LOCATION` (space), `LEAD_TIME` (time) or `ELEMENT` (intervariable), all encode information about different types of dependence. For some applications, one or more of these columns may have constant entries. For generality, we suggest including these standard reference variables regardless and using this general format even if those variables are fixed. This makes adapting scripts and adding in other ensemble data easier later.
 
-### Quick comment on dates 
+### Date handling
 
-While base R caters for date types via `POSIXct()` and associated functions, the **lubridate** package offers broadly equaivalent functionality in a clearer and more concise way. The **lubridate** packge therefore offers a much easier way to process dates. It is therefore strongly suggested the columns of `FORECAST_DATE`, `INIT_TIME` and `LEAD_TIME` are converted into lubridate objects. 
+While base R caters for date types via `POSIXct()` and associated functions, the **lubridate** package offers broadly equaivalent functionality in a clearer and more concise way, and provides a much easier way to process dates. It is therefore strongly suggested the columns of `FORECAST_DATE`, `INIT_TIME` and `LEAD_TIME` are converted into lubridate objects. 
 
 ```{r}
 ## Example converting different date strings to a date object
-sample_dates = c("20200601", "2020-06-02", "2020/06/03")
-lubridate_dates = lubridate::as_date(sample_dates)
-print(lubridate_dates)
+FORECAST_DATE = c("20200601", "2020-06-02", "2020/06/03")
+FORECAST_DATE = lubridate::as_date(FORECAST_DATE)
+print(FORECAST_DATE)
 
 ## Example creating an hms() object from an initialisation string
-sample_init_times = c("0:0:0", "12:0:0")
-lubridate_init_times = lubridate::hms(sample_init_times)
-print(lubridate_init_times)
+INIT_TIME = c("0:0:0", "12:0:0", "0:0:0")
+INIT_TIME = lubridate::hms(INIT_TIME)
+print(INIT_TIME)
 
 ## Another example for hms() using an numeric input
-sample_lead_times = c(0,6)
-lubridate_lead_times = paste0(sample_lead_times, ":0:0") %>%
+LEAD_TIME = c(0,6,12)
+LEAD_TIME = paste0(LEAD_TIME, ":0:0") %>%
   lubridate::hms()
-print(lubridate_lead_times)
+print(LEAD_TIME)
 ```
 
 For the columns of `INIT_TIME` and `LEAD_TIME` it is convienent to convert the `lubridate::hms()` objects into `lubridate::as.duration()`. This is for two reasons:
@@ -125,42 +126,157 @@ For the columns of `INIT_TIME` and `LEAD_TIME` it is convienent to convert the `
 (i) Then the observation date can easily be obtained through the summation of `FORECAST_DATE`, `INIT_TIME` and `LEAD_TIME` if these variables are all date classes.
 
 ```{r}
-lubridate_dates[1] + lubridate_init_times[2] + lubridate_lead_times[2]
+FORECAST_DATE + INIT_TIME + LEAD_TIME
 ```
 
 (ii) The suite of join operations in the **dplyr** package can be used. Notice the difference between these these two join opertions in the following example. In the first example, the common entries are not correctly recognised. 
 
 ```{r}
 ## without lubridate::as.duration()
-df1 <- df2 <- data.frame(
-  INIT_TIME = lubridate_init_times, 
-  LEAD_TIME = lubridate_lead_times)
+df1 <- df2 <- data.frame(FORECAST_DATE, INIT_TIME, LEAD_TIME)
 dplyr::full_join(df1, df2, by = c("INIT_TIME", "LEAD_TIME"))
 
 ## with lubridate::as.duration()
-df1 <- df2 <- data.frame(
-  INIT_TIME = lubridate::as.duration(lubridate_init_times), 
-  LEAD_TIME = lubridate::as.duration(lubridate_lead_times))
+df1 <- df2 <- data.frame(FORECAST_DATE,
+  INIT_TIME = lubridate::as.duration(INIT_TIME), 
+  LEAD_TIME = lubridate::as.duration(LEAD_TIME))
 full_join(df1, df2, by = c("INIT_TIME", "LEAD_TIME"))
 ```
 
-Using a duration for the columns of `INIT_TIME` and `LEAD_TIME` mostly gets around some sticky issues commonly encountered when using date objects. An exception is `bind_rows()`, which doesn't respect the duration class and instead reverts the entries to numeric types befor performing vector operations. An easy work around is to just convert the numeric types back into durations. 
+Using a duration for the columns of `INIT_TIME` and `LEAD_TIME` mostly gets around some sticky issues commonly encountered when using date objects. An exception is `bind_rows()`, which doesn't respect the duration class and instead reverts the entries to numeric types before performing vector operations. An easy work around is to just convert the numeric types back into durations. 
 
 ```{r}
-bind_rows(df1[1,], df1[2,]) 
+suppressWarnings(bind_rows(df1[1,], df1[2,])) 
 
 # versus
 
-bind_rows(df1[1,], df1[2,]) %>%
+suppressWarnings(bind_rows(df1[1,], df1[2,])) %>%
   dplyr::mutate(LEAD_TIME = lubridate::as.duration(LEAD_TIME),
                 INIT_TIME = lubridate::as.duration(INIT_TIME))
 ```
 
-When possible one could just use `rbind()` instead to avoid this issue. However,  `rbind()` won't work if the names of the two data frames are different and that is when `bind_rows()` may need to be called.
+When possible one could just use `rbind()` instead to avoid this issue. However,  `rbind()` won't work if the names of the two data frames are different whereas `bind_rows()` will.
 
 ## Methods for restoring dependence
 
+Traditional methods of restoring dependence to an ensemble forecasts can be broken down into three steps: 
+
+1) Sample members from the univariate post-processed distribution 
+
+2) Create a dependence template
+
+3) Reshuffle the members according to that dependence template
+
+These tradition methods encompass empircal copula coupling (ECC) and Schaake shuffle variants, and are the benchmarks methods for all studies in multivariate post-processing.
+
+### 1. Sample ensemble members
+
+In univariate post-processing the distribution of the raw ensemble is statistically corrected for errors, such bias or dispersion errors. 
+
+```{r echo = FALSE, eval = FALSE}
+m = 50
+mu_pp = 0.1
+sigma_pp = 1.1
+ens_raw = rnorm(m)
+ens_pp = rnorm(m, mu_pp, sigma_pp)
+x = seq(-4,4,length.out = 100)
+ens_raw_dens = dnorm(x)
+ens_pp_dens = dnorm(x, mu_pp, sigma_pp)
+
+raw_ens <- ggplot() + 
+  geom_point(data = NULL, aes(x = ens_raw, y = rep(0, m))) + 
+  theme_bw() + 
+  xlab("Raw members")
+
+raw_plot <- ggplot() + 
+  geom_density(data = NULL, aes(ens_raw)) +
+  theme_bw() + 
+  xlab("Raw Forecast Density")
+
+pp_plot <- ggplot() + 
+  geom_density(data = NULL, aes(ens_raw*sigma_pp + mu_pp)) +
+  theme_bw() + 
+  xlab("Univariate Post-processed Forecast Density")
+
+pp_ens <- ggplot() + 
+  geom_point(data = NULL, aes(x = ens_pp, y = rep(0, m))) +
+  theme_bw() + 
+  xlab("Sampled members")
+```
+
+We will not cover the steps to perform univariate post-processing here. There is a wealth of literature avaiable (Insert brief literature summary here) and there many different R packages available to help implement these methods (insert package summary here). 
+
+<!-- Nice to insert a short literature review of methods and pacakges -->
+
+This section will instead detail how to sample ensemble members from the univariate post-processed distribution in R. 
+<!-- Later this sampled ensemble is reshuffled using a dependence template (Steps 2 and 3) to ensure spatial, temporal or inter-variable dependence structures are preserved. -->
+
+#### Quantiles
+
+```{r echo = FALSE}
+m = 11
+```
+
+Let `m` be the number of ensemble members. Some different methods for quantile sampling include:
+
+**Equally spaced Quantiles (Q)**
+
+```{r}
+Q = (1:m)/(m + 1)
+```
+
+and the slight variant  
+**Equally space quantiles (Q1)**
+
+```{r}
+Q1 = (1:m - 0.5)/m
+```
+
+**Random Quantiles (R)**
+
+```{r}
+R = runif(m)
+```
+
+**Jittered Quantiles (S)**
+
+```{r}
+S = (1:m-1)/m + runif(m)/m
+```
+
+For ease we've wrapped these quantile sampling options in the function `get_ecc_members()`. The different sampling types can be specified using the input arguement `ecc_type`. 
+
+A few comments on quantile sampling; It is important to note sampling random quantiles is not recommended for small ensemble sizes because the full distribution is often poorly approximated and this can impact scoring. As the ensemble size increases the probability space is better sampled and ensembles generated wtih random compared with equi-spaced quantiles will generate similar scores. *(?Comment according to Bröcker Q1/S is optimal sampling)* Also note the quantile sample types of `R` and `Q` correspond to the multivaraite post-processing methods of ECC-Q and ECC-R. 
+
+#### Sample Members
+
+The **depPPR** package is designed to help streamline the steps needed for multivariate post-processing, so for this reason `get_ecc_members()` is called within `sample_ecc_members()`. The `sample_ecc_members()` function takes inputs of the distribution type of function for sampling (`function_type`), the parameters of this distribution (`pars`) and the number of samples to generate.
+
+For example to generate a 5 member ensemble using the standard normal distribution we could call:
+```{r}
+num_members = 5
+pars <- data.frame(mean = 0, sd = 1)
+sample_ecc_members(num_members, qnorm,  pars,  'Q')
+```
+
+Similar to create two realisations of a 5 member ensemble from  a normal distribution with different parameters we can use
+```{r}
+# Sample members from the same distribution function 
+# but with different parameters
+pars <- data.frame(mean = c(0,10), sd = c(1,1))
+sample_ecc_members(num_members,  rnorm, pars, 'R')
+```
+
+Notice the the `function_type` and the `ecc_type` are very much related. To randomly sample from a distribution, then the `ecc_type` should be `R` and the distribution `rxxx`. For equi-spaced or jittered quantiles, then one of `Q`, `Q1` or `S` should be used with a function beginning with `qxxx`. See `distributions` in the base **stats** package for details of possible function types. (Currently not compatible with ecdf functions - want to work on this)
+
+*(Think I need maths language - to make how this sections is written much easier to read!)*
+<!-- The generate an ensemble from the forecast distribution, $F_Y(y)$ we  -->
+
 ### Empirical Copula Coupling
+
+*(Also I should just run a data example the whole way through!)*
+
+Once the data is in the standard format it is remarkably simple to perfom ECC.
 
 ### Schaake Shuffle 
 
