@@ -48,7 +48,7 @@
 #' obs <- drop(mu0 + rnorm(d) %*% chol(S0))
 #' raw_ensemble <- replicate(m, drop(mu + rnorm(d) %*% chol(S)))
 #'
-#' pars = data.frame(mu = mu0, sigma = rep(1, d))
+#' pars = data.frame(mean = mu0, sd = rep(1, d))
 #' draw_type = 'R'
 #' univariate_forecast <- sample_ecc_members(num_members = m,  rnorm, pars,  draw_type)
 #'
