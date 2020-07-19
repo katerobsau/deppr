@@ -7,7 +7,7 @@
 get_minimum_divergence(x_vec, hist_vec)
 }
 \arguments{
-\item{x_vec}{a vector of giving values of an ensemble forecasts.
+\item{x_vec}{a vector of giving values of an ensemble forecast.
 The length of the vector corresponds
 to the number of ensemble members.}
 
@@ -21,14 +21,15 @@ This function calculates the minimum divergence between an
 ensemble forecast and a corresponding set of historical observations.
 }
 \details{
-Let the forecast distribution for a fixed location, $s$, and lead time, $t$,
-be given by $F_{st}^{\mathcal{f}}(x)$. For a set of historical dates,
+Let the forecast distribution
+be given by $F^{\mathcal{f}}(x)$. For a set of historical dates,
 $\mathcal{H}$, let the empirical distribution function that corresponds to the
-observational trajectories of the dates in $\mathcal{H}$ be
-given by $F_{st}^{\mathcal{H}}(x)$. The minimum divergence is
-$\Delta_{st}^{\mathcal{H}} = \int \left(F_{st}^{\mathcal{H}}(x) - F_{st}^{\mathcal{f}}(x) \right)^2 \text{dx}
+observations of the dates in $\mathcal{H}$ be
+given by $F^{\mathcal{H}}(x)$. The minimum divergence is
+$$\Delta^{\mathcal{H}} = \int \left(F^{\mathcal{H}}(x) - F^{\mathcal{f}}(x) \right)^2 \text{dx}$$
 
-For computational details see Scheuerer et al. (2017).
+Computation of this minimum divergence term is greatly simplified using
+Appendix A of Scheuerer et al. (2017).
 }
 \examples{
 num_members = 50
@@ -44,7 +45,7 @@ forecast fields of temperature and precipitation."
 Water Resources Research 53.4 (2017): 3029-3046.
 }
 \seealso{
-\code{\link{get_mindiv_epsilon}} \code{\link{get_div_toal}}
+\code{\link{get_total_divergence}} and \code{\link{get_mindiv_epsilon}}.
 }
 \author{
 Kate Saunders and Kirien Whan

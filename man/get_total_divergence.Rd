@@ -7,36 +7,26 @@
 get_total_divergence(X_mat, H_mat)
 }
 \arguments{
-\item{X_mat}{a matrix where rows are different ensemble forecasts and the columns
-are the number of members}
+\item{X_mat}{a matrix where rows correspond to different locations and lead times
+for a given ensemble forecast. The columns correspond to the number of members.}
 
-\item{H_mat}{a matrix of historical observations.}
+\item{H_mat}{a matrix of historical observations. The rows and columns of this
+matrix are arranged in such a way that the observational trajectories are
+consistent with the locations and lead times of the rows in \code{X_mat}.}
 }
 \value{
-A value for the total divergence between a set of ensemble forecasts and
-a set of possible dates that will be used in to perform the Schaake shuffle.
+a numeric value giving the total divergence
 }
 \description{
-This function commutes the
-minimum divergence metric between a set of ensemble forecast and a corresponding
-set of historical observations.
+This function computes the
+minimum divergence between an ensemble forecast and a corresponding
+set of historical observations. The sum of the minimum divergence over all
+locations and lead times is then returned.
 }
 \details{
-This function calculates the minimum divergence between a set of
-ensemble forecasts and a corresponding set of historical observations, whose
-trajectories could be used to create dependence template.
-
-Let the forecast distribution for a fixed location, $s$, and lead time, $t$,
-be given by $F_{st}^{\mathcal{f}}(x)$. For a set of historical dates,
-$\mathcal{H}$, let the empirical distribution function that corresponds to the
-observational trajectories of the dates in $\mathcal{H}$ be
-given by $F_{st}^{\mathcal{H}}(x)$. The minimum divergence is
-$\Delta_{st}^{\mathcal{H}} = \int \left(F_{st}^{\mathcal{H}}(x) - F_{st}^{\mathcal{f}}(x) \right)^2 \text{dx}
-The total divergence is then given by summing the diverage for all locations and lead times.
-
-This function operates on the matrices row-wise, so a row of $X_mat$ corresponds
-to one fixed $s$ and $t$. The observational entries in the $H_mat$ need to be
-consistent with these $s$ and $t$.
+This function operates on the two input matrices row-wise, calculating
+the minimum divergence for a given location and lead time. The sum over all
+locations and lead times is then returned.
 }
 \examples{
 num_members = 50
@@ -52,7 +42,7 @@ forecast fields of temperature and precipitation."
 Water Resources Research 53.4 (2017): 3029-3046.
 }
 \seealso{
-\code{\link{get_mindiv_epsilon}}
+\code{\link{get_minimum_divergence}}
 }
 \author{
 Kate Saunders and Kirien Whan

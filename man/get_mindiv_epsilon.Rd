@@ -7,32 +7,38 @@
 get_mindiv_epsilon(x_vec, y_val, sgn)
 }
 \arguments{
-\item{x_vec}{a numeric vector corresponding to the ensemble forecast from
-a marginal distribution, so the forecast is for a fixed location, lead time,
-initialisation time and meteorlogical variable.
-The length of \code{x_vec} therefore is the same as the number of ensemble members.}
+\item{x_vec}{a vector of giving values of an ensemble forecasts.
+The length of the vector corresponds
+to the number of ensemble members.}
 
-\item{y_val}{a numeric value of an observation}
+\item{y_val}{a numeric value of an historical observation}
 
 \item{sgn}{is one of the characters, "+" or "-".}
 }
 \value{
-a value for $ \epsilon_+$ (or $\epsilon_-$).
-These $\epsilon$ terms are needed to calculate the minimum divergence
-needed for preferential date selection in the Schaake shuffle.
+a value for $\epsilon_+$ (or $\epsilon_-$).
 }
 \description{
-This function is a helper that computes one of terms needed to estimate the
-minimum divergence between the ensemble forecast and historical dates.
+This function is a helper that computes terms needed to
+estimate the minimum divergence between an ensemble forecast
+and a set of historical observations.
 }
 \details{
-This function calculates the difference between an historical observation and
-the members of an ensemble forecast. This difference is then passed to a sign function,
-written as $(x)_+$ where is equivalent to $max(x, 0)$ and the average
-over all ensemble members is returned. If the \code{sgn} is "+" then
+This function calculates the difference between an
+historical observation and the members of an ensemble forecast.
+This difference is then passed to a sign function. The ensemble average
+of the evaluated sign function is returned.
+
+The sign functions is mathematically written as $f(x) = (x)_+$. This
+is equivalent operation to $f(x) = max(x, 0)$.
+
+Let $M$ be the number of members, then if the \code{sgn} is "+"
 $ \epsilon_+ = \frac{1}{M} \Sum_{i = 1}^M (y - x_i)_+ $,
-otherwise if \code{sgn} is "-" then
+otherwise, if \code{sgn} is "-"
 $ \epsilon_- = \frac{1}{M} \Sum_{i = 1}^M (x_i - y)_+ $,
+
+These epsilon terms are further described in Scheuerer et al. (2017).
+They are computed separately for computational efficiency.
 }
 \examples{
 num_members = 10
@@ -51,7 +57,7 @@ forecast fields of temperature and precipitation."
 Water Resources Research 53.4 (2017): 3029-3046.
 }
 \seealso{
-This function is called by \code{\link{get_minimum_divergence}}
+\code{\link{get_minimum_divergence}}
 }
 \author{
 Kate Saunders and Kirien Whan
