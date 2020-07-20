@@ -42,7 +42,7 @@ get_total_divergence <- function(X_mat, H_mat){
   num_dates = nrow(H_mat)
   div_vec = rep(NA, num_dates)
   for(i in 1:num_dates)
-    div_vec[i] <- get_minimim_divergence(y = H_mat[i,], x = X_mat[i,])
+    div_vec[i] <- get_minimum_divergence(hist_vec = H_mat[i,], x_vec = X_mat[i,])
 
   total_div = sum(div_vec)
 
