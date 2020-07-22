@@ -8,7 +8,7 @@ Description: Package for restoring dependence after to univariate forecasts that
 License: General licence
 Encoding: UTF-8
 LazyData: true
-Depends: tidyverse
+Depends: tidyverse, foreach
 Suggests: knitr, rmarkdown
 RoxygenNote: 6.1.1
 VignetteBuilder: knitr

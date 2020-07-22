@@ -29,26 +29,38 @@
 #'
 #' @export
 #'
-#' X = matrix(rnorm(100), nrow = 2)
-#' H = matrix(rnorm(40), nrow = 2)
-#' backward_selection_mindiv(backward_num = 19, X_Mat = X, H_mat = H)
-backward_selection_mindiv <- function(backward_num, X_mat, H_mat){
+#' X_mat = matrix(rnorm(20), nrow = 2)
+#' H_mat = matrix(rnorm(40), nrow = 2)
+#' H_mat[,19] = H_mat[,19] + 5
+#' H_mat[,20] = H_mat[,20] + 10
+#' min_row1 = get_minimum_divergence(X_mat[1,], H_mat[1,])
+#' min_row2 = get_minimum_divergence(X_mat[2,], H_mat[2,])
+#' total_div = get_total_divergence(X_mat, H_mat)
+#' total_div == (min_row1 + min_row2)
+#' H_mat_reduced = backward_selection_mindiv(X_mat = X_mat, H_mat = H_mat, backward_num = 19)
+#' all(H_mat[, 1:19] == H_mat_reduced)
+#' H_mat_reduced = backward_selection_mindiv(X_mat = X_mat, H_mat = H_mat, backward_num = 18)
+#' all(H_mat[, 1:18] == H_mat_reduced)
+backward_selection_mindiv <- function(X_mat, H_mat, backward_num){
 
-  total_div_minus_j = rep(NA, ncol(H_mat))
+  if(ncol(H_mat) < backward_num)
+    stop("Too few historical observations for backward selection, reducce backward_num")
 
-  # cl <- makeCluster(detectCores() - 1)
-  # doParallel::registerDoParallel(cl)
-  #
-  # foreach(j = 1:ncol(H_mat), .packages = c("depPPR")) %dopar% {
-  #   total_div_minus_j[j] <- get_total_divergence(X_mat = X_mat, H_mat = H_mat[,-j])
-  # }
+  num_dates = ncol(H_mat)
+  total_div_minus_j = rep(NA, num_dates)
 
-  for(j in 1:ncol(H_mat))
-    total_div_minus_j[j] <- get_total_divergence(X_mat = X_mat, H_mat = H_mat[,-j])
+  cl <- parallel::makeCluster(parallel::detectCores() - 1)
+  doParallel::registerDoParallel(cl)
 
-  rank_vec = rank(total_div_minus_j)
-  eliminate_dates = which(rank_vec > backward_num)
-  H_mat_reduced = H_mat[ , -eliminate_dates]
+  total_div_minus_j <- foreach(j = 1:num_dates, .packages = c("depPPR")) %dopar% {
+    get_total_divergence(X_mat = X_mat, H_mat = H_mat[,-j])
+  } %>% unlist()
+
+  parallel::stopCluster(cl)
+
+  rank_cols = rank(total_div_minus_j)
+  keep_cols <- which(rank_cols > num_dates - backward_num)
+  H_mat_reduced = H_mat[ ,keep_cols]
 
   return(H_mat_reduced)
 
