@@ -5,7 +5,7 @@ Version: 0.1.0
 Authors@R: c(person("Kate", "Saunders", email = "K.R.Saunders@tudeflt.nl", role = c("aut", "cre")), person("Kirien", "Whan", email = "Kirien.Whan@knmi.nl", role = "aut"))
 Maintainer: Kate Saunders <K.R.Saunders@tudelft.nl>
 Description: Package for restoring dependence statistically post-processed univariate forecasts.
-License: General licence
+License: MIT + file LICENSE
 Encoding: UTF-8
 LazyData: true
 Depends: tidyverse, foreach
