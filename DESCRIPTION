@@ -2,7 +2,7 @@ Package: depPPR
 Type: Package
 Title: depPPR - Dependence Post-processing in R
 Version: 0.1.0
-Authors@R: c(person("Kate", "Saunders", email = "K.R.Saunders@tudeflt.nl", role = c("aut", "cre")), person("Kirien", "Whan", email = "Kirien.Whan@knmi.nl", role = "ctb"))
+Authors@R: c(person("Kate", "Saunders", email = "K.R.Saunders@tudeflt.nl", role = c("aut", "cre")), person("Kirien", "Whan", email = "Kirien.Whan@knmi.nl", role = "aut"))
 Maintainer: Kate Saunders <K.R.Saunders@tudelft.nl>
 Description: Package for restoring dependence statistically post-processed univariate forecasts.
 License: General licence
