@@ -8,7 +8,12 @@ Description: Package for restoring dependence statistically post-processed univa
 License: MIT + file LICENSE
 Encoding: UTF-8
 LazyData: true
-Depends: tidyverse, foreach
-Suggests: knitr, rmarkdown
+Depends: tidyverse
+Suggests: 
+    knitr,
+    rmarkdown,
+    testthat (>= 2.1.0)
 RoxygenNote: 6.1.1
 VignetteBuilder: knitr
+Imports: 
+    foreach
