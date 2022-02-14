@@ -15,18 +15,18 @@
 #' This difference is then passed to a sign function. The ensemble average
 #' of the evaluated sign function is returned.
 #'
-#' The sign functions is mathematically written as $f(x) = (x)_+$. This
-#' is equivalent operation to $f(x) = max(x, 0)$.
+#' The sign functions is mathematically written as \eqn{f(x) = (x)_+}. This
+#' is equivalent operation to \eqn{f(x) = max(x, 0)}.
 #'
 #' Let $M$ be the number of members, then if the \code{sgn} is "+"
-#' $ \epsilon_+ = \frac{1}{M} \Sum_{i = 1}^M (y - x_i)_+ $,
+#' \eqn{ \epsilon_+ = \frac{1}{M} \Sum_{i = 1}^M (y - x_i)_+ },
 #' otherwise, if \code{sgn} is "-"
-#' $ \epsilon_- = \frac{1}{M} \Sum_{i = 1}^M (x_i - y)_+ $,
+#' \eqn{ \epsilon_- = \frac{1}{M} \Sum_{i = 1}^M (x_i - y)_+ },
 #'
 #' These epsilon terms are further described in Scheuerer et al. (2017).
 #' They are computed separately for computational efficiency.
 #'
-#' @return a value for $\epsilon_+$ (or $\epsilon_-$).
+#' @return a value for \eqn{\epsilon_+} (or \eqn{\epsilon_-}).
 #'
 #' @seealso \code{\link{get_minimum_divergence}}
 #'

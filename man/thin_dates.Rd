@@ -4,11 +4,12 @@
 \alias{thin_dates}
 \title{Thins dates for Minimum Divergence Schaake shuffling}
 \usage{
-thin_dates(X_mat, H_mat, retain_N)
+thin_dates(Pred_mat, H_mat, retain_N)
 }
 \arguments{
-\item{X_mat}{a matrix where rows correspond to different locations and lead times
-for a given ensemble forecast. The columns correspond to the number of members.}
+\item{Pred_mat}{a matrix where rows correspond to different locations and lead times
+for a given ensemble forecast. The columns give the lower and upper predictive
+intervals for the marginal distribution.}
 
 \item{H_mat}{a matrix of historical observations. The rows and columns of this
 matrix are arranged in such a way that the observational trajectories are
@@ -35,7 +36,7 @@ greatly reduced the computational time needed to estimate the total
 divergence and perform backward selection, see Scheuerer et al. (2017).
 }
 \examples{
-
+#WRITE AN EXAMPLE
 }
 \references{
 Scheuerer, Michael, et al.

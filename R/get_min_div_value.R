@@ -9,11 +9,11 @@
 #' @param hist_vec a vector of historical observations.
 #'
 #' @details Let the forecast distribution
-#' be given by $F^{\mathcal{f}}(x)$. For a set of historical dates,
-#' $\mathcal{H}$, let the empirical distribution function that corresponds to the
-#' observations of the dates in $\mathcal{H}$ be
-#' given by $F^{\mathcal{H}}(x)$. The minimum divergence is
-#' $$\Delta^{\mathcal{H}} = \int \left(F^{\mathcal{H}}(x) - F^{\mathcal{f}}(x) \right)^2 \text{dx}$$
+#' be given by \eqn{F^{\mathcal{f}}(x)}. For a set of historical dates,
+#' \eqn{\mathcal{H}}, let the empirical distribution function that corresponds to the
+#' observations of the dates in \eqn{\mathcal{H}} be
+#' given by \eqn{F^{\mathcal{H}}(x)}. The minimum divergence is
+#' \deqn{\Delta^{\mathcal{H}} = \int \left(F^{\mathcal{H}}(x) - F^{\mathcal{f}}(x) \right)^2 \text{dx}}
 #'
 #' Computation of this minimum divergence term is greatly simplified using
 #' Appendix A of Scheuerer et al. (2017).
