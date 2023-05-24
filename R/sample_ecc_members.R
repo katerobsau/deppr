@@ -1,6 +1,6 @@
 #' Samples ensemble members from a normal distribution
 #'
-#' This functions samples ensembe members from the provided distribution function.
+#' This functions samples ensemble members from the provided distribution function.
 #' The type of sampling can be one of ECC-R (random),
 #' ECC-Q (uniform  quantiles) or ECC-S (jittered quantiles).
 #'
