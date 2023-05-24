@@ -1,6 +1,8 @@
 
 benchmark_all <- function(){
 
+# -----------------------------------------------------------------------------
+
 # Schaake
 
 # (Window / climate) Schaake
@@ -10,11 +12,16 @@ benchmark_all <- function(){
 # -----------------------------------------------------------------------------
 
 # MinDiv (this needs to be optional as its slow)
+
 # Wrote the details fo this out in schaake_template_mindiv()
 
 # -----------------------------------------------------------------------------
 
 # ECC
+
+# To run ECC we need to pass through a quantile sampling method (letter)
+# A function and its parameters to sample from
+# Then the raw forecast as the template
 
 # There is the function get_ecc_quantiles() to handle quantile sampling
 # This helps code the different ECC sub methods based one sampling
