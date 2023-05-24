@@ -7,9 +7,10 @@ benchmark_all <- function(){
 
 # SimSchaake
 
+# -----------------------------------------------------------------------------
 
 # MinDiv (this needs to be optional as its slow)
-# Wrote the details fo this out in
+# Wrote the details fo this out in schaake_template_mindiv()
 
 # -----------------------------------------------------------------------------
 
