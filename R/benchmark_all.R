@@ -3,17 +3,27 @@ benchmark_all <- function(){
 
 # -----------------------------------------------------------------------------
 
-# Schaake
+# Schaake OR (Window / climate) Schaake OR SimSchaake (not written yet)
 
-# (Window / climate) Schaake
+# schaake_shuffle() is the function that currently does the shuffling
+# need to pass a template of observations to this function
 
-# SimSchaake
+# Internal functions that get called in schaake_shuffle() are in
+# shuffle_members_internal.R and inlcude rank_members() and sort_members()
+# Seems I dropped order_members() function in this file
+# and use the newer reorder_members()
 
-# -----------------------------------------------------------------------------
+# sample_schaake_dates() window of dates that are similar to the forecast
+# there is some intelligent handling here of missing dates
 
-# MinDiv (this needs to be optional as its slow)
+# once dates are selected a user can then use schaake_shuffle()
 
-# Wrote the details fo this out in schaake_template_mindiv()
+# No code for SimSchaake currently
+
+# Code to get minimum divergence dates is explained in schaake_template_mindiv()
+# (this needs to be optional in benchmark all as its slow)
+
+# once dates from min div are gotten again can just use schaake_shuffle()
 
 # -----------------------------------------------------------------------------
 
@@ -33,10 +43,11 @@ benchmark_all <- function(){
 # This apply_ecc_template() performs the shuffle relative to the raw forecast
 # This function could be generalised
 
-# Internal functions that get called in apply_ecc_template() are in
-# shuffle_members_internal.R and inlcude rank_members() and sort_members()
-# Seems I dropped order_members() function in this file
-# and use the newer reorder_members() that is also used in Schaake
+# Internal functions that get called in apply_ecc_template() are the same as
+# those used in the schaake_shuffle()
+
+# apply_ecc_template() and schaake_shuffle() could be replaced with one shuffle()
+# function
 
 # -----------------------------------------------------------------------------
 
