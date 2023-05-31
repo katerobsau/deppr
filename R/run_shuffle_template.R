@@ -1,17 +1,20 @@
 #' Shuffles a post-processed forecast to restore dependence
 #'
-#' Need to update here
-#'
-#' @param X is a matrix where the columns correspond to multivariate forecasts.
-#' @param Y is a matrix where the columns correspond to the template for
+#' @param forecast is a matrix where the columns correspond to multivariate forecasts.
+#' @param template is a matrix where the columns correspond to the template for
 #' reshuffling
 #'
-#' @return a matrix where the post-processed forecast with no dependence
-#' has been reshuffled according to the template to produce a forecast with
-#' dependence
+#' @return a matrix where the post-processed forecast with dependence based on
+#' the template
 #'
 #' @details
-#' Need to update these
+#' For a forecast that has been sampled from a post-processed forecast distribution
+#' the members need to be reshuffled to restore a meaningful dependence structure
+#' in space, time or both.
+#'
+#' This function uses a template to reshuffle the sample ensemble members. The
+#' template can be one of climatology, as in the Schaake Shuffle, or can be from
+#' the raw ensemble forecast, as in Empirical Copula Coupling.
 #'
 #' @author Kate Saunders and Kirien Whan
 #'
@@ -20,7 +23,6 @@
 #' Clark, Martyn, et al. "The Schaake shuffle: A method for reconstructing
 #' space–time variability in forecasted precipitation and temperature fields."
 #' Journal of Hydrometeorology 5.1 (2004): 243-262.
-#'
 #'
 #' Schefzik, Roman, Thordis L. Thorarinsdottir, and Tilmann Gneiting.
 #' "Uncertainty quantification in complex simulation models using ensemble
@@ -31,6 +33,9 @@
 #' 17.9 (2016): 2405-2417.
 #'
 #' @examples
+#'
+#' Add the example back in
+#'
 #'
 #'@export
 run_shuffle_template <- function(forecast, template){
