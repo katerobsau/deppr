@@ -26,9 +26,6 @@ Does stuff
 \details{
 details about stuff
 }
-\examples{
-
-}
 \references{
 Scheuerer, Michael, et al.
 "A method for preferential selection of dates in the

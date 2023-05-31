@@ -20,7 +20,7 @@ This character corresponds to the desired ECC sampling method}
 a matrix where the columns give the sampled ensemble members
 }
 \description{
-This functions samples ensembe members from the provided distribution function.
+This functions samples ensemble members from the provided distribution function.
 The type of sampling can be one of ECC-R (random),
 ECC-Q (uniform  quantiles) or ECC-S (jittered quantiles).
 }

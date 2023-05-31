@@ -1,4 +1,3 @@
-
 benchmark_all <- function(){
 
 # -----------------------------------------------------------------------------
@@ -53,7 +52,7 @@ benchmark_all <- function(){
 
 # Need to think about what we want to return from here
 
-# eg. Return post-processed forecasts
+# eg. Return shuffled forecasts
 
 # Scoring the forecasts should be separate ??
 

@@ -13,7 +13,7 @@ Suggests:
     knitr,
     rmarkdown,
     testthat (>= 2.1.0)
-RoxygenNote: 7.1.1
+RoxygenNote: 7.2.3
 VignetteBuilder: knitr
 Imports: 
     foreach

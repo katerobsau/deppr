@@ -32,6 +32,7 @@ plot_data = full_join(day_pp, day_ecc) %>%
   mutate(dep_type = as.factor(dep_type))
 levels(plot_data$dep_type) = c(ecc = "ECC", pp = "Post-processed",
                                raw = "Raw Ensemble")
+
 compare_plot <- ggplot(data = plot_data) +
   geom_point(aes(x = lead_time, y = wsur, group = member,
                  col = as.factor(member)),
