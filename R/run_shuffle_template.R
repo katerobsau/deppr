@@ -34,8 +34,24 @@
 #'
 #' @examples
 #'
-#' Add the example back in
+#' d <- 3  # number of dimensions (space x time)
+#' m <- 5  # number of members (sampled from the post-process forecast distribution)
 #'
+#' set.seed(1)
+#' eg_forecast = matrix(rnorm(d*m), nrow = 1)
+#'
+#' eg_template = matrix(rnorm(d*m), nrow = 1)
+#'
+#' forecast_with_dependence = run_shuffle_template(eg_forecast, eg_template)
+#'
+#' # Checking the eg_forecast inherited the order from the dependence eg_template
+#' order(eg_forecast)
+#' order(eg_template)
+#' order(forecast_with_dependence)
+#'
+#' # Checking the eg_forecast still contains the same members after shuffling
+#' sort(eg_forecast)
+#' sort(forecast_with_dependence)
 #'
 #'@export
 run_shuffle_template <- function(forecast, template){
