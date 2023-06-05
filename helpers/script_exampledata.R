@@ -19,12 +19,12 @@ main_dir <- getwd()
 # define file
 kepsobs_rds <- list.files(
     path =  paste0(main_dir, "/data/"),
-    pattern = "KEPS_KNMI_lts_membs_",
+    pattern = "KEPSOBS_T_2019-2021",
     full.names = TRUE)
 
 # import data
 kepsobs_data <- readRDS(kepsobs_rds)
-station_names <- unique(kepsobs_data$station)
+station_names <- unique(kepsobs_data$name)
 lead_times <- unique(kepsobs_data$leadtime)
 keps_members <- kepsobs_data %>% dplyr::select(starts_with("EM")) %>% names()
 
@@ -34,13 +34,13 @@ kepsobs_data$EnsS <- apply(kepsobs_data %>% dplyr::select(starts_with("EM")), 1,
 
 
 
-# local PP
-# train on June-July, test on August
-train_dates <- unique(kepsobs_data$init_time)[grep("-06-|-07-", unique(kepsobs_data$init_time))]
-test_dates <- unique(kepsobs_data$init_time)[grep("-08-", unique(kepsobs_data$init_time))]
 
-train <- kepsobs_data %>% filter(init_time %in% train_dates)
-test <- kepsobs_data %>% filter(init_time %in% test_dates)
+# local PP
+# train on June-July 2020, test on August 2020
+train <- kepsobs_data %>%
+  filter(year(init_time) == 2020 & month(init_time) %in% c(6,7))
+test <- kepsobs_data %>%
+  filter(year(init_time) == 2020 & month(init_time) %in% c(8))
 
 # fit a model per station and leadtime:
 # loop over stations:
@@ -52,12 +52,12 @@ for(st in seq_along(station_names)){
     preds_lt <- list()
     for(lt in seq_along(lead_times)){
         # define train/test for each station/leadtime
-        train_stlt <- train %>% filter(station == station_names[st] & leadtime == lead_times[lt])
-        test_stlt <- test %>% filter(station == station_names[st] & leadtime == lead_times[lt])
+        train_stlt <- train %>% filter(name == station_names[st] & leadtime == lead_times[lt])
+        test_stlt <- test %>% filter(name == station_names[st] & leadtime == lead_times[lt])
 
         # fit the model:
         #   a normal distribution where we predict mu from EnsM and sigma from EnsS
-        fits_lt[[lt]] <- gamlss(T2m~EnsM, sigma.formula = ~EnsS,
+        fits_lt[[lt]] <- gamlss(T~EnsM, sigma.formula = ~EnsS,
             data = as.data.frame(train_stlt),
             family = NO())
 
@@ -76,6 +76,11 @@ preds <- rbindlist(preds)
 
 # make new ensemble members by drawing from the distributions:
 # draw random members:
+
+sample_dist_all <- function(){
+
+}
+
 ppfcstsR <- mapply(rNO, mu = preds$mu, sigma = preds$sigma, USE.NAMES = TRUE, MoreArgs = list(n = 11)) %>% t()
 colnames(ppfcstsR) <- paste0("EMOSR", 1:11)
 
@@ -90,14 +95,14 @@ preds <- cbind(preds, ppfcstsR) %>% cbind(., ppfcstsQ)
 
 # crps
 preds$crpsRAW <- crps_sample(
-        y = preds$T2m,
+        y = preds$T,
         dat = as.matrix(preds %>%
           dplyr::select(matches(keps_members)))
       )
 
 
 preds$crpsEMOSQ <- crps_sample(
-        y = preds$T2m,
+        y = preds$T,
         dat = as.matrix(preds %>%
           dplyr::select(matches(paste0("^EMOSQ", 1:11, "$"))))
       )
@@ -108,39 +113,46 @@ mean(preds$crpsEMOSQ)
 
 
 # plot example
-plotdate = "2021-08-02"
+plotdate = "2020-08-30"
 ggplot(preds %>%
-    filter(init_time == as.Date(plotdate)) %>%
-    pivot_longer(., EM000:EM010, names_to = "member", values_to = "KEPS")) +
-geom_line(aes(x = leadtime, y = KEPS, group = member), col = 'forestgreen') +
-geom_line(aes(x = leadtime, y = T2m, group = station), col = 'black') +
-facet_wrap(~station) +
-theme_bw() +
-ggtitle(plotdate)
-
-
-# plot example
-ggplot(preds %>%
-    filter(init_time == as.Date(plotdate)) %>%
-    pivot_longer(., EMOSR1:EMOSR11, names_to = "member", values_to = "KEPS")) +
+         filter(init_time == as.Date(plotdate)) %>%
+         pivot_longer(., c(starts_with("EM")), names_to = "member", values_to = "KEPS") %>%
+         mutate(model = gsub("[0-9]", "", member))) +
   geom_line(aes(x = leadtime, y = KEPS, group = member), col = 'forestgreen') +
-  geom_line(aes(x = leadtime, y = T2m, group = station), col = 'black') +
-  facet_wrap(~station) +
-  theme_bw()+
-  labs(title = plotdate, subtitle = "Observation = black,\npost-processed members with random quantiles = green")
+  geom_line(aes(x = leadtime, y = T, group = name), col = 'black') +
+  facet_wrap(~model + name) +
+  theme_bw() +
+  ggtitle(plotdate)
 
 
+# crps plot
 ggplot(preds %>%
-    filter(init_time == as.Date(plotdate)) %>%
-    pivot_longer(., EMOSQ1:EMOSQ11, names_to = "member", values_to = "KEPS")) +
-  geom_line(aes(x = leadtime, y = KEPS, group = member), col = 'forestgreen') +
-  geom_line(aes(x = leadtime, y = T2m, group = station), col = 'black') +
-  facet_wrap(~station) +
-  theme_bw()+
-  labs(title = plotdate, subtitle = "Observation = black,\npost-processed members with equally spaced quantiles = green")
+         filter(init_time == as.Date(plotdate)) %>%
+         pivot_longer(., c(crpsRAW, crpsEMOSQ), names_to = "member", values_to = "KEPS")) +
+  geom_line(aes(x = leadtime, y = KEPS, group = member, color = member)) +
+  facet_wrap(~name) +
+  theme_bw() +
+  ggtitle(plotdate)
 
 
 
 ############# Restore dependencies
 
+
+
+# SSh
+# make a template from observations
+
+
+
+# compare ECC and SSh
+# same function for any method. Just give different template.
+ECC = run_shuffle_template(forecast = as.matrix(preds[1,] %>% dplyr::select(starts_with("EMOSR"))),
+                     template = as.matrix(preds[1,] %>% dplyr::select(matches("EM[0-9]"))))
+
+
+SSh = run_shuffle_template(forecast = as.matrix(preds[1,] %>% dplyr::select(starts_with("EMOSR"))),
+                           template = as.matrix(preds[1,] %>% dplyr::select(matches("EM[0-9]"))))
+
+# scoring using scoringRules
 
