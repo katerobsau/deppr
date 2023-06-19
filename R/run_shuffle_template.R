@@ -53,6 +53,8 @@
 #' sort(eg_forecast)
 #' sort(forecast_with_dependence)
 #'
+#' Add in the example with the data here
+#'
 #'@export
 run_shuffle_template <- function(forecast, template){
 

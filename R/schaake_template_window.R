@@ -1,4 +1,5 @@
 schaake_template_window <- function(n_members, historical_dates, date_val, window = 7){
+
   # from 'sample_schaake_dates'
   # n_members = the number of draws / ensemble members
   # historical_dates = the dates from which to draw

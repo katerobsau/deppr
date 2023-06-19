@@ -6,16 +6,19 @@ benchmark_all <- function(){
 
 # schaake_shuffle() is the function that currently does the shuffling
 # need to pass a template of observations to this function
+# deprecated
 
 # Internal functions that get called in schaake_shuffle() are in
 # shuffle_members_internal.R and inlcude rank_members() and sort_members()
 # Seems I dropped order_members() function in this file
 # and use the newer reorder_members()
+# (renamed these files to reflect they are internal)
 
 # sample_schaake_dates() window of dates that are similar to the forecast
 # there is some intelligent handling here of missing dates
 
 # once dates are selected a user can then use schaake_shuffle()
+# (moved this to old - replaced with the run_shuffle_template())
 
 # No code for SimSchaake currently
 
@@ -37,7 +40,7 @@ benchmark_all <- function(){
 # eg R - random, Q - equi-spaced quantils , S - jittered
 
 # The function sample_ecc_members() then generates the post-processed
-#  ensemble members (works for all inbuild distribution I think but not ecdf ? )
+#  ensemble members (works for all inbuilt distribution I think but not ecdf ? )
 
 # This apply_ecc_template() performs the shuffle relative to the raw forecast
 # This function could be generalised
