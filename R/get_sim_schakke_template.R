@@ -1,27 +1,56 @@
+#' Shuffles a post-processed forecast to restore dependence using observations from past dates
+#' that had similar forecasts
+#'
+#' @param forecast is a matrix where the columns correspond to members with the unrealistic dependence structure, and the rows are a space or time dimension
+#' @param template is a matrix where the columns correspond to the template for dependence structure, and the rows are a space or time dimension
+#'
+#' @return a matrix where the post-processed forecast with dependence based on
+#' the template
+#'
+#' @details
+#' For a forecast that has been sampled from a post-processed forecast distribution
+#' the members need to be reshuffled to restore a meaningful dependence structure
+#' in space, time or both.
+#'
+#' This function uses a template to reshuffle the sample ensemble members. The
+#' template can be one of climatology, as in the Schaake shuffle, or can be from
+#' the raw ensemble forecast, as in empirical copula coupling.
+#'
+#' @author Kate Saunders and Kirien Whan
+#'
+#' @references
+#'
+#' Sim Schaake paper
+#'
 #' @examples
-#' forecast = rnorm(6) |> matrix(3, 2)
 #'
-#' obs_1 = rnorm(3)
-#' obs_2 = rnorm(3, mean = 0.5)
-#' obs_3 = rnorm(3, mean = 1)
-#' obs_list = list(obs_1, obs_2, obs_3)
+#' num_stations = 2
+#' num_lead_times = 4
+#' forecast_dim = num_stations*num_lead_times
+#' num_members = 3
+
+#' forecast = rnorm(forecast_dim*num_members) |>
+#'                matrix(forecast_dim, num_members)
 #'
-#' past_forecast_1 = rnorm(6) |> matrix(3, 2)
-#' past_forecast_2 = rnorm(6, mean = 0.5) |> matrix(3, 2)
-#' past_forecast_3 = rnorm(6, mean = 1) |> matrix(3, 2)
-#' past_forecast_list = list(forecast_1, forecast_2, forecast_3)
-#' template = get_sim_schaake_template(forecast, past_forecast_list)
+#' forecast_list = list(forecast - 1, forecast + 0.5, forecast + 1, forecast + 2)
+#' obs_list = list(rnorm(forecast_dim) - 1, rnorm(forecast_dim) + 0.5,
+#'                      rnorm(forecast_dim) + 1, rnorm(forecast_dim) + 2)
 #'
+#' template = get_sim_schaake_template(forecast, forecast_list, obs_list)
 #'
 get_sim_schaake_template <- function(forecast, forecast_list, obs_list){
 # members = cols
 # forecast dimension = number of rows
+
+warning("Add checks for dimension consistency")
+warning("Add checks for sufficient dates")
 
 warning("Forecasts with multiple variables should be standardised")
 
   if(!is.list(forecast_list)){
     error("forecast_list must be a list object")
   }
+
 
   get_marginal_sd <- function(forecast){
     sd_vec = apply(forecast, 1, sd)
@@ -32,32 +61,26 @@ warning("Forecasts with multiple variables should be standardised")
   forecast_dim = nrow(forecast)
 
   forecast_means = rowMeans(forecast)
-  matrix_means = lapply(forecast_list, rowMeans) |>
-    unlist() |>
-    matrix(byrow = TRUE, nrow = forecast_dim)
+  past_forecast_means = lapply(forecast_list, rowMeans)
+  mean_diff = matrix(0, length(forecast_list), forecast_dim)
+  for(i in 1:length(forecast_list)){
+    mean_diff[i,] = (forecast_means - past_forecast_means[[i]])^2}
+  mean_contrib = rowSums(mean_diff)/forecast_dim
 
   forecast_sd = get_marginal_sd(forecast)
-  matrix_sd = lapply(forecast_list, get_marginal_sd) |>
-    unlist() |>
-    matrix(byrow = TRUE, nrow = forecast_dim)
+  past_forecast_sd = lapply(forecast_list, get_marginal_sd)
+  sd_diff = mean_diff*0
+  for(i in 1:length(forecast_list))
+    sd_diff[i,] = (forecast_sd - past_forecast_sd[[i]])^2
+  sd_contrib = rowSums(sd_diff)/forecast_dim
 
-  mean_diff = (matrix_means -
-                    matrix(rep(forecast_means, times = nrow(matrix_means)),
-                           byrow = TRUE, nrow = forecast_dim))
-
-  sd_diff = (matrix_sd -
-               matrix(rep(forecast_sd, times = nrow(matrix_sd)),
-                      byrow = TRUE, nrow = forecast_dim))
-
-  similarity_criterion = (1/forecast_dim*rowSums(mean_diff^2) +
-                            1/forecast_dim*rowSums(sd_diff^2)) |>
-    sqrt()
+  similarity_criterion = sqrt(mean_contrib + sd_contrib)
 
   retain_dates = which(rank(similarity_criterion) <= num_members)
 
   template = obs_list[retain_dates] |>
     unlist() |>
-    matrix(byrow = TRUE, nrow = forecast_dim)
+    matrix(byrow = FALSE, nrow = forecast_dim)
 
   return(template)
 
