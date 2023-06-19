@@ -1,5 +1,17 @@
-get_sim_schaake_criteria <- function(forecast, forecast_list){
-# members = rows
+#' forecast = rnorm(6) |> matrix(3, 2)
+#' @examples
+#' past_forecast_1 = rnorm(6) |> matrix(3, 2)
+#' past_forecast_2 = rnorm(6, mean = 0.5) |> matrix(3, 2)
+#' past_forecast_3 = rnorm(6, mean = 1) |> matrix(3, 2)
+#' past_forecast_list = list(forecast_1, forecast_2, forecast_3)
+#' template = get_sim_schaake_template(forecast, past_forecast_list)
+#' all(template == forecast_1)
+#'
+get_sim_schaake_template <- function(forecast, forecast_list){
+# members = cols
+# forecast dimension = number of rows
+
+warning("Forecasts with multiple variables should be standardised")
 
   if(!is.list(forecast_list)){
     error("forecast_list must be a list object")
@@ -28,15 +40,13 @@ get_sim_schaake_criteria <- function(forecast, forecast_list){
 
   sd_diff = (matrix_sd -
                matrix(rep(forecast_sd, times = nrow(matrix_sd)),
-                      byrow = TRUE, nrow = forecast_dim))^2
+                      byrow = TRUE, nrow = forecast_dim))
 
-  sim_schaake_criteria = (1/forecast_dim*rowSums(mean_diff^2) +
+  similarity_criterion = (1/forecast_dim*rowSums(mean_diff^2) +
                             1/forecast_dim*rowSums(sd_diff^2)) |>
     sqrt()
 
-  template_ind = which.min(sim_schaake_criteria)
-
-  template = forecast_list[[template_ind]]
+  template = forecast_list[[which.min(similarity_criterion)]]
 
   return(template)
 
