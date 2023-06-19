@@ -27,19 +27,25 @@
 #' from a calibrated ensemble forecast distribution." Journal of Hydrometeorology
 #' 17.9 (2016): 2405-2417.
 #'
+#' Bröck et al. 2012
+#'
 #' @seealso \code{\link{get_quantiles}}
 #'
 #' @examples
 #' get_quantiles(n_members = 3, method = "random")
 #' get_quantiles(n_members = 4, method = "equally_spaced")
-#' get_quantiles(n_members = 5, method = "S")
+#' get_quantiles(n_members = 4, method = "equally_spaced_shift")
+#' get_quantiles(n_members = 5, method = "jittered")
 #'
 get_quantiles <- function(n_members, method){
+
   quantiles <- switch(method,
                       random = runif(n_members),
                       equally_spaced = (1:n_members)/(n_members + 1),
-                      S = (1:n_members-1)/n_members + runif(n_members)/n_members,
-                      Q1 = (1:n_members - 0.5)/n_members)
+                      jittered = (1:n_members - 1)/n_members + runif(n_members)/n_members,
+                      equally_spaced_shift = (1:n_members - 0.5)/n_members)
+
   return(quantiles)
+
 }
 
