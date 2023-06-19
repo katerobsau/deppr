@@ -40,12 +40,12 @@ kepsobs_data$EnsS <- apply(kepsobs_data %>% dplyr::select(starts_with("EM")), 1,
 train <- kepsobs_data %>%
   filter(year(init_time) == 2020 & month(init_time) %in% c(6,7))
 test <- kepsobs_data %>%
-  filter(year(init_time) == 2020 & month(init_time) %in% c(8))
+  filter(year(init_time) == 2020 & month(init_time) %in% c(8)) # 31 days
 
 # fit a model per station and leadtime:
 # loop over stations:
 fits <- list()
-preds <- list()
+preds_list <- list()
 for(st in seq_along(station_names)){
     # loop over leadtimes
     fits_lt <- list()
@@ -67,11 +67,11 @@ for(st in seq_along(station_names)){
         cbind(test_stlt, .)
     }
     fits[[st]] <- fits_lt
-    preds[[st]] <- rbindlist(preds_lt)
+    preds_list[[st]] <- rbindlist(preds_lt)
 
 }
 
-preds <- rbindlist(preds)
+preds <- rbindlist(preds_list)
 
 
 # make new ensemble members by drawing from the distributions:
@@ -84,8 +84,7 @@ sample_dist <- function(params, family, quantiles, newname){
   mapply(qNO, mu = params$mu, sigma = params$sigma, USE.NAMES = TRUE, MoreArgs = list(p = quantiles)) %>%
     t() %>%
     as.data.frame() %>%
-    magrittr::set_colnames(paste0(newname, 1:length(quantiles))) %>%
-    mutate(mu = params$mu, sigma = params$sigma)
+    magrittr::set_colnames(paste0(newname, 1:length(quantiles)))
 
 }
 
@@ -93,13 +92,8 @@ ppfcsts <- mapply(FUN = sample_dist, quantiles = quants, newname = quantile_meth
        MoreArgs = list(params = list(mu = preds$mu, sigma = preds$sigma)), SIMPLIFY = FALSE)
 
 
-
-# draw equally spaced quantiles:
-ppfcstsQ <- mapply(qNO, mu = preds$mu, sigma = preds$sigma, USE.NAMES = TRUE, MoreArgs = list(p = (1:11)/12)) %>% t()
-colnames(ppfcstsQ) <- paste0("EMOSQ", 1:11)
-
 # combine raw and post-processed forecasts together:
-preds <- cbind(preds, ppfcstsR) %>% cbind(., ppfcstsQ)
+preds <- cbind(preds, ppfcsts[[1]]) %>% cbind(., ppfcsts[[2]])
 
 # calculate scores:
 
@@ -111,15 +105,22 @@ preds$crpsRAW <- crps_sample(
       )
 
 
-preds$crpsEMOSQ <- crps_sample(
+preds$crpsE <- crps_sample(
         y = preds$T,
         dat = as.matrix(preds %>%
-          dplyr::select(matches(paste0("^EMOSQ", 1:11, "$"))))
+          dplyr::select(matches(paste0("^equally_spaced"))))
       )
+
+preds$crpsR <- crps_sample(
+  y = preds$T,
+  dat = as.matrix(preds %>%
+                    dplyr::select(matches(paste0("^random"))))
+)
 
 # mean crps improves
 mean(preds$crpsRAW)
-mean(preds$crpsEMOSQ)
+mean(preds$crpsE)
+mean(preds$crpsR)
 
 
 # plot example
@@ -134,11 +135,32 @@ ggplot(preds %>%
   theme_bw() +
   ggtitle(plotdate)
 
+ggplot(preds %>%
+         filter(init_time == as.Date(plotdate)) %>%
+         pivot_longer(., c(starts_with("equally_spaced")), names_to = "member", values_to = "KEPS") %>%
+         mutate(model = gsub("[0-9]", "", member))) +
+  geom_line(aes(x = leadtime, y = KEPS, group = member), col = 'forestgreen') +
+  geom_line(aes(x = leadtime, y = T, group = name), col = 'black') +
+  facet_wrap(~model + name) +
+  theme_bw() +
+  ggtitle(plotdate)
+
+
+ggplot(preds %>%
+         filter(init_time == as.Date(plotdate)) %>%
+         pivot_longer(., c(starts_with("random")), names_to = "member", values_to = "KEPS") %>%
+         mutate(model = gsub("[0-9]", "", member))) +
+  geom_line(aes(x = leadtime, y = KEPS, group = member), col = 'forestgreen') +
+  geom_line(aes(x = leadtime, y = T, group = name), col = 'black') +
+  facet_wrap(~model + name) +
+  theme_bw() +
+  ggtitle(plotdate)
+
 
 # crps plot
 ggplot(preds %>%
          filter(init_time == as.Date(plotdate)) %>%
-         pivot_longer(., c(crpsRAW, crpsEMOSQ), names_to = "member", values_to = "KEPS")) +
+         pivot_longer(., c(crpsRAW, crpsE), names_to = "member", values_to = "KEPS")) +
   geom_line(aes(x = leadtime, y = KEPS, group = member, color = member)) +
   facet_wrap(~name) +
   theme_bw() +
@@ -148,21 +170,70 @@ ggplot(preds %>%
 
 ############# Restore dependencies
 
+# import historical observations:
+# define file
+obs_rds <- list.files(
+  path =  paste0(main_dir, "/data/"),
+  pattern = "OBS_T_1950-2021",
+  full.names = TRUE)
+
+# import data
+obs_data <- readRDS(obs_rds) %>%
+  mutate(valid_date = as.Date(valid_time)) %>%
+  filter(valid_date > as.Date("1986-01-01")) # only keep recent years
 
 
-# SSh
+# SSh - window
 # make a template from observations
 
+# what dates do we need to reshuffle:
+preds_dates <- preds %>% filter(leadtime == "01" & name == station_names[1]) %>% pull(init_time) %>% as.Date()
+# vector of historical dates:
+hist_dates <- obs_data %>% filter(name == station_names[1] &  hour(valid_time) == 1) %>% pull(valid_time) %>% as.Date()
+# get the templates:
+wind_templates <- mapply(FUN = schaake_template_window,
+       date_val = preds_dates,
+       MoreArgs = list(n_members = 11, window = 5, historical_dates = hist_dates),
+       SIMPLIFY = FALSE)
 
 
-# compare ECC and SSh
-# same function for any method. Just give different template.
-ECC = run_shuffle_template(forecast = as.matrix(preds[1,] %>% dplyr::select(starts_with("EMOSR"))),
-                     template = as.matrix(preds[1,] %>% dplyr::select(matches("EM[0-9]"))))
+# function to get the date/times for each leadtime
+make_lt_templates <- function(start_date, leadtimes){
+  as.character(as.POSIXct(start_date, tz = "UTC") + as.numeric(leadtimes) * 60 * 60)
+}
+
+# returns a list where length = number of days in test set, and
+#   where each item has nrows = length(lead_times) and ncols = n_members
+wind_templates_lts <- lapply(seq_along(wind_templates), function(wt){
+  mapply(FUN = make_lt_templates, start_date = paste0(wind_templates[[wt]], " 00:00:00"), MoreArgs = list(leadtimes = lead_times))
+})
+
+# a function to apply run_shuffle_template to all leadtimes and stations at once:
+apply_rst <- function(ltt){
+  fc_dat <- preds %>%
+    filter(init_time == preds_dates[pd] & leadtime == lead_times[ltt])
+  tp_dates <- wind_templates_lts[[pd]][ltt,] %>%
+    as.POSIXct(., format = "%Y-%m-%d %H:%M:%S", tz = "UTC")
+  ob_dat <- obs_data %>%
+    filter(valid_time %in% tp_dates) %>%
+    dplyr::select(valid_time, T, name) %>%
+    pivot_wider(., values_from = "T", names_from = "name") %>%
+    dplyr::select(-valid_time) %>% as.matrix() %>% t()
+
+  run_shuffle_template(forecast = fc_dat %>%
+                         dplyr::select(starts_with("equally_spaced")) %>% as.matrix(),
+                       template = ob_dat) %>%
+    magrittr::set_colnames(paste0("equally_spaced_ssh_", 1:length(quants$equally_spaced))) %>%
+    cbind(fc_dat, .)
+}
+
+# loop over each day in the test set:
+preds_ssh <- lapply(seq_along(preds_dates), function(pd){
+  mapply(FUN = apply_rst, lt = seq_along(lead_times), SIMPLIFY = FALSE) %>% bind_rows()
+}) %>% bind_rows()
 
 
-SSh = run_shuffle_template(forecast = as.matrix(preds[1,] %>% dplyr::select(starts_with("EMOSR"))),
-                           template = as.matrix(preds[1,] %>% dplyr::select(matches("EM[0-9]"))))
 
-# scoring using scoringRules
+
+
 

@@ -6,6 +6,9 @@ schaake_template_window <- function(n_members, historical_dates, date_val, windo
   # date_val = the date that we need a template for
   # window = the size of the window from which to draw
 
+  if(class(date_val) != "Date"){
+    stop("date_val must be a Date")
+  }
 
   window_dates = seq(date_val - window, date_val + window, by = "days")
 
