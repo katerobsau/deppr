@@ -1,13 +1,19 @@
-#' forecast = rnorm(6) |> matrix(3, 2)
 #' @examples
+#' forecast = rnorm(6) |> matrix(3, 2)
+#'
+#' obs_1 = rnorm(3)
+#' obs_2 = rnorm(3, mean = 0.5)
+#' obs_3 = rnorm(3, mean = 1)
+#' obs_list = list(obs_1, obs_2, obs_3)
+#'
 #' past_forecast_1 = rnorm(6) |> matrix(3, 2)
 #' past_forecast_2 = rnorm(6, mean = 0.5) |> matrix(3, 2)
 #' past_forecast_3 = rnorm(6, mean = 1) |> matrix(3, 2)
 #' past_forecast_list = list(forecast_1, forecast_2, forecast_3)
 #' template = get_sim_schaake_template(forecast, past_forecast_list)
-#' all(template == forecast_1)
 #'
-get_sim_schaake_template <- function(forecast, forecast_list){
+#'
+get_sim_schaake_template <- function(forecast, forecast_list, obs_list){
 # members = cols
 # forecast dimension = number of rows
 
@@ -22,6 +28,7 @@ warning("Forecasts with multiple variables should be standardised")
     return(sd_vec)
   }
 
+  num_members = ncol(forecast)
   forecast_dim = nrow(forecast)
 
   forecast_means = rowMeans(forecast)
@@ -46,7 +53,11 @@ warning("Forecasts with multiple variables should be standardised")
                             1/forecast_dim*rowSums(sd_diff^2)) |>
     sqrt()
 
-  template = forecast_list[[which.min(similarity_criterion)]]
+  retain_dates = which(rank(similarity_criterion) <= num_members)
+
+  template = obs_list[retain_dates] |>
+    unlist() |>
+    matrix(byrow = TRUE, nrow = forecast_dim)
 
   return(template)
 
