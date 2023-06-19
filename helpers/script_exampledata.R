@@ -75,21 +75,12 @@ preds <- rbindlist(preds)
 
 
 # make new ensemble members by drawing from the distributions:
-# draw random members:
-
-get_quantiles <- function(n_members, method){
-  quantiles <- switch(method,
-                      random = runif(n_members),
-                      equally_spaced = (1:n_members)/(n_members + 1),
-                      S = (1:n_members-1)/n_members + runif(n_members)/n_members,
-                      Q1 = (1:n_members - 0.5)/n_members)
-  return(quantiles)
-}
+# draw members: random or equally spaced
 
 quantile_methods <- c("random", "equally_spaced")
-quants <- mapply(FUN = get_quantiles, method = quantile_methods, MoreArgs = list(n_members = 11))
+quants <- mapply(FUN = get_quantiles, method = quantile_methods, MoreArgs = list(n_members = 11), SIMPLIFY = FALSE)
 
-sample_dist_all <- function(params, family, quantiles, newname){
+sample_dist <- function(params, family, quantiles, newname){
   mapply(qNO, mu = params$mu, sigma = params$sigma, USE.NAMES = TRUE, MoreArgs = list(p = quantiles)) %>%
     t() %>%
     as.data.frame() %>%
@@ -98,13 +89,10 @@ sample_dist_all <- function(params, family, quantiles, newname){
 
 }
 
-sample_dist_all(params = list(mu = preds$mu, sigma = preds$sigma), family = "NO", quantiles = quants[,1], newname = quantile_methods[1]) %>% head()
+ppfcsts <- mapply(FUN = sample_dist, quantiles = quants, newname = quantile_methods,
+       MoreArgs = list(params = list(mu = preds$mu, sigma = preds$sigma)), SIMPLIFY = FALSE)
 
 
-mapply(FUN = sample_dist_all, quantiles = quants, newnames = quantile_methods, MoreArgs = list(params = list(mu = preds$mu, sigma = preds$sigma)))
-
-ppfcstsR <- mapply(rNO, mu = preds$mu, sigma = preds$sigma, USE.NAMES = TRUE, MoreArgs = list(n = 11)) %>% t()
-colnames(ppfcstsR) <- paste0("EMOSR", 1:11)
 
 # draw equally spaced quantiles:
 ppfcstsQ <- mapply(qNO, mu = preds$mu, sigma = preds$sigma, USE.NAMES = TRUE, MoreArgs = list(p = (1:11)/12)) %>% t()
