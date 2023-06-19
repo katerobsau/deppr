@@ -170,6 +170,12 @@ ggplot(preds %>%
 
 ############# Restore dependencies
 
+# function to get the date/times for each leadtime
+make_lt_templates <- function(start_date, leadtimes){
+  as.character(as.POSIXct(start_date, tz = "UTC") + as.numeric(leadtimes) * 60 * 60)
+}
+
+
 # import historical observations:
 # define file
 obs_rds <- list.files(
@@ -179,15 +185,45 @@ obs_rds <- list.files(
 
 # import data
 obs_data <- readRDS(obs_rds) %>%
-  mutate(valid_date = as.Date(valid_time)) %>%
-  filter(valid_date > as.Date("1986-01-01")) # only keep recent years
+  mutate(valid_date = as.Date(valid_time))
 
+
+# function to make sure we only provide dates that have all dates/times available:
+check_avail_datestimes <- function(obsdf, stations, leadtimes){
+
+}
+
+# only keep cases where there are no missing values:
+countsmissing <- obs_data %>%
+  group_by(valid_time) %>%
+  summarise(ncase = length(name)) %>%
+  mutate(hour = hour(valid_time))
+
+
+missing_dates <- countsmissing %>% filter(ncase != 4)
+notmissing_dates <- countsmissing %>%
+  filter(ncase == 4) %>%
+  mutate(min2 = valid_time - 2 * 60 * 60 * 24,
+         plu2 = valid_time + 2 * 60 * 60 * 24)
+
+
+
+
+notmissing_lt_list <- mapply(FUN = make_lt_templates, start_date = countsmissing %>% filter(hour == 0) %>% pull(valid_time),
+       MoreArgs = list(leadtimes = lead_times), SIMPLIFY = FALSE)
+
+
+lapply(notmissing_lt_list, function(x) {
+  sum(as.POSIXct(notmissing_lt_list[[1]], format = "%Y-%m-%d %H:%M:%S", tz = "UTC") %in% notmissing$valid_time)
+  }) %>% unlist() %>% sum()
+
+obs_data <- obs_data %>% filter(valid_time %in% notmissing)
 
 # SSh - window
 # make a template from observations
 
-# what dates do we need to reshuffle:
-preds_dates <- preds %>% filter(leadtime == "01" & name == station_names[1]) %>% pull(init_time) %>% as.Date()
+# what dates do we need to reshuffle: all the dates in the test set
+preds_dates <- test %>% pull(init_time) %>% unique() %>% as.Date()
 # vector of historical dates:
 hist_dates <- obs_data %>% filter(name == station_names[1] &  hour(valid_time) == 1) %>% pull(valid_time) %>% as.Date()
 # get the templates:
@@ -197,10 +233,6 @@ wind_templates <- mapply(FUN = schaake_template_window,
        SIMPLIFY = FALSE)
 
 
-# function to get the date/times for each leadtime
-make_lt_templates <- function(start_date, leadtimes){
-  as.character(as.POSIXct(start_date, tz = "UTC") + as.numeric(leadtimes) * 60 * 60)
-}
 
 # returns a list where length = number of days in test set, and
 #   where each item has nrows = length(lead_times) and ncols = n_members
@@ -209,10 +241,10 @@ wind_templates_lts <- lapply(seq_along(wind_templates), function(wt){
 })
 
 # a function to apply run_shuffle_template to all leadtimes and stations at once:
-apply_rst <- function(ltt){
+apply_rst <- function(ltt, pdd){
   fc_dat <- preds %>%
-    filter(init_time == preds_dates[pd] & leadtime == lead_times[ltt])
-  tp_dates <- wind_templates_lts[[pd]][ltt,] %>%
+    filter(init_time == preds_dates[pdd] & leadtime == lead_times[ltt])
+  tp_dates <- wind_templates_lts[[pdd]][ltt,] %>%
     as.POSIXct(., format = "%Y-%m-%d %H:%M:%S", tz = "UTC")
   ob_dat <- obs_data %>%
     filter(valid_time %in% tp_dates) %>%
@@ -234,6 +266,10 @@ preds_ssh <- lapply(seq_along(preds_dates), function(pd){
 
 
 
+mapply(FUN = apply_rst, lt = seq_along(lead_times), pdd = seq_along(preds_dates), SIMPLIFY = FALSE)
 
 
-
+# sim ssh
+get_sim_schaake_template(forecast = preds[1,] %>% dplyr::select(starts_with("EM")),
+                         forecast_list = preds[5000:5900,] %>% dplyr::select(starts_with("EM")),
+                         obs_list = preds[5000:5900,] %>% dplyr::select(T))
