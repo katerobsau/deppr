@@ -276,9 +276,11 @@ wind_templates_lts <- lapply(seq_along(wind_templates), function(wt){
 # a function to apply run_shuffle_template to a leadtime and station combination:
 apply_rst <- function(pl){
   pl = as.numeric(pl)
+  # get the forecasts in a matrix where nrows = length(station_names) and ncols = n_members
   fc_dat <- preds %>%
     filter(init_time == preds_dates[pl[1]] & leadtime == lead_times[pl[2]])
   tp_dates <- wind_templates_lts[[pl[1]]][pl[2],]
+  # get the observations in a matrix where nrows = length(station_names) and ncols = n_members/length(template)
   ob_dat <- obs_data %>%
     filter(valid_time %in% tp_dates) %>%
     dplyr::select(valid_time, T, name) %>%
