@@ -57,7 +57,7 @@ get_good_schaake_datetimes <- function(obs_datetime,
 
   #assumes initiated on the hour
 
-  all_datetimes = seq(min(obs_datetime), max(obs_datetime), by = by_value)
+  all_datetimes = seq(min(obs_datetime), max(obs_datetime), by = "hours")
 
   init_datetimes = all_datetimes[which(hour(all_datetimes) %in% as.numeric(init_times))]
 
@@ -75,6 +75,26 @@ get_good_schaake_datetimes <- function(obs_datetime,
                                         format = "%Y-%m-%d %H:%M:%S", ... ) |> sort()
 
   }
+
+  return(good_schaake_datetimes)
+
+}
+
+get_schaake_shuffle_dates <- function(obs_datetime, tz, window, init_times){
+
+  missing_datetimes <- get_missing_datetimes(obs_datetime,
+                                             tz = tz)
+
+
+  all_bad_datetimes <- get_all_bad_datetimes(missing_datetimes,
+                                             window = window,
+                                             init_times = init_times,
+                                             tz = tz)
+
+  good_schaake_datetimes <- get_good_schaake_datetimes(obs_datetime,
+                                                       init_times = init_times,
+                                                       all_bad_datetimes,
+                                                       tz = tz)
 
   return(good_schaake_datetimes)
 
