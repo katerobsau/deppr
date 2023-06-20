@@ -20,7 +20,7 @@ main_dir <- getwd()
 station_names <- c("De Bilt", "Schiphol", "Cabauw mast", "Maastricht")
 lead_times <- sprintf("%02d", 1:48)
 keps_members <- paste0("EM", sprintf("%03d", 0:10))
-
+init_hours <- c("00")
 
 ####################################################################
 ################# IMPORT ALL DATA AND POST-PROCESS:
@@ -206,6 +206,7 @@ obs_data <- readRDS(obs_rds) %>%
   na.omit() %>%
   unique()
 
+#obs_data = obs_data[-c(100, 1000:1300)]
 
 # application specific (eg. 4 stations all need dates)
 obs_datetime = obs_data %>%
@@ -221,71 +222,22 @@ missing_datetimes <- get_missing_datetimes(obs_datetime,
 
 all_bad_datetimes <- get_all_bad_datetimes(missing_datetimes,
                                            window = days(2),
-                                           init_times = c("00" , "12"),
+                                           init_times = c("00"),
                                            tz = "UTC")
 
 good_schaake_datetimes <- get_good_schaake_datetimes(obs_datetime,
-                                                     init_times = c("00", "12"),
+                                                     init_times = c("00"),
                                                      all_bad_datetimes,
                                                      tz = "UTC")
 
-# potential init_times - keep valid_hour == 0 as all our forecasts are
-# initilised at 00 UTC
-hist_init_times <- obs_data %>%
-  filter(valid_hour == 0) %>%
-  pull(valid_time) %>%
-  unique()
-
-# for each potential init_time, make a vector of all the leadtimes that we would need:
-hist_init_lt <- mapply(FUN = make_lt_templates,
-                       start_date = hist_init_times,
-                       MoreArgs = list(leadtimes = lead_times),
-                       SIMPLIFY = FALSE)
-
-# check that all leadtimes are available for each potential init_time:
-all_valid_times <- obs_data$valid_time
-
-
-# this is a slow function:
-# for each of the potential init times, count how many observations there are
-# there should be length(lead_times) * length(station_names) = 48 * 4 = 192
-n.cores = 8
-clust <- makeCluster(n.cores)
-clusterExport(clust, c("hist_init_lt", "all_valid_times"))
-hist_init_lt_keep <- parLapply(clust, seq_along(hist_init_lt), function(hil){
-  sum(all_valid_times %in% hist_init_lt[[hil]])
-}) %>% unlist()
-stopCluster(clust)
-
-
-# check that we have length(lead_times) * length(station_names)
-hist_init_lt_keep_df <- data.frame(hist_init_lt = hist_init_lt_keep,
-                                potential_init = hist_init_times)
-
-# keep only the potential_init times that have the right number of observations:
-hist_init_notmissing <- hist_init_lt_keep_df %>%
-  filter(hist_init_lt == length(lead_times) * length(station_names)) %>%
-  pull(potential_init)
-
-#
-hist_initslt_notmissing <- hist_init_lt[which(hist_init_times %in% hist_init_notmissing)] %>% do.call("c", .) %>% unique()
-
-# filter obs_data
-obs_data <- obs_data %>% filter(valid_time %in% hist_initslt_notmissing)
-
-## back again to main example thread
-
 # SSh - window
 # make a template from observations
-
 # what dates do we need to reshuffle: all the dates in the test set
 preds_dates <- test %>% pull(init_time) %>% unique() %>% as.Date()
-# vector of historical dates:
-hist_dates <- hist_init_times[which(hist_init_times %in% hist_init_notmissing)]
 # get the templates:
 wind_templates <- mapply(FUN = schaake_template_window,
                          date_val = preds_dates,
-                         MoreArgs = list(n_members = 11, window = 5, historical_dates = as.Date(hist_dates)),
+                         MoreArgs = list(n_members = 11, window = 5, historical_dates = as.Date(good_schaake_datetimes)),
                          SIMPLIFY = FALSE)
 
 
@@ -330,6 +282,8 @@ apply_rst <- function(pl){
 preds_ssh <- lapply(seq_along(preds_dates), function(pl){
   apply_rst(pl)
 }) %>% bind_rows()
+
+
 
 # sim ssh
 get_sim_schaake_template(forecast = preds[1,] %>% dplyr::select(starts_with("EM")),
