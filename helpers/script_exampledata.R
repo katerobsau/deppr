@@ -211,17 +211,36 @@ obs_data <- readRDS(obs_rds) %>%
 
 # dates_all = intersect(dates1, dates2)
 
-
 all_times = seq(min(obs_data$valid_time), max(obs_data$valid_time), by = "hour")
 
 missing_times = c()
 for(i in 1:length(station_names)){
   missing_times = c(missing_times,
                     setdiff(as.character(all_times),
-                        as.character(
-                          obs_data %>% filter(name == station_names[i]) %>% pull(valid_time)
-                        )))
+                            as.character(
+                              obs_data %>% filter(name == station_names[i]) %>% pull(valid_time)
+                            )))
 }
+#
+# get_missing_datetimes <- function(obs_datetime, by_value = "hour"){
+#
+#   all_datetimes = seq(min(obs_datetime), max(obs_datetime), by = by_value)
+#   missing_datetimes = setdiff(as.character(all_datetimes), as.character(obs_datetime))
+#
+#   #note: returns as character to avoid date issues with setdiff
+#
+#   return(missing_datetimes)
+#
+# }
+#
+# obs_datetime = obs_data %>%
+#   count(valid_time) %>%
+#   filter(n == 4) %>%
+#   pull(valid_time)
+
+missing_datetimes <- get_missing_datetimes(obs_datetime) %>%
+  as.POSIXct(., format = "%Y-%m-%d %H:%M:%S", tz = "UTC")
+
 
 all_missing_times = missing_times %>%
   unique() %>%
@@ -261,7 +280,8 @@ good_schaake_days = setdiff(as.character(all_init_times),
 
 # Kate's weirdness ends -----
 
-# potential init_times - keep valid_hour == 0 as all our forecasts are initilised at 00 UTC
+# potential init_times - keep valid_hour == 0 as all our forecasts are
+# initilised at 00 UTC
 hist_init_times <- obs_data %>%
   filter(valid_hour == 0) %>%
   pull(valid_time) %>%
@@ -303,6 +323,8 @@ hist_initslt_notmissing <- hist_init_lt[which(hist_init_times %in% hist_init_not
 
 # filter obs_data
 obs_data <- obs_data %>% filter(valid_time %in% hist_initslt_notmissing)
+
+## back again to main example thread
 
 # SSh - window
 # make a template from observations
