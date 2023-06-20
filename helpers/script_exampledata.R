@@ -201,84 +201,28 @@ obs_data <- readRDS(obs_rds) %>%
   na.omit() %>%
   unique()
 
-# Kate's weirdness ------
-# Check that there are values
-# Check for repeats
-# Need to identify missingness at each time point
 
-# len_lead_time = 48 # hours
-# needs to be valid for all locations
+# application specific (eg. 4 stations all need dates)
+obs_datetime = obs_data %>%
+  count(valid_time) %>%
+  filter(n == 4) %>%
+  pull(valid_time)
 
-# dates_all = intersect(dates1, dates2)
+missing_datetimes <- get_missing_datetimes(obs_datetime,
+                                           tz = "UTC")
 
-all_times = seq(min(obs_data$valid_time), max(obs_data$valid_time), by = "hour")
+# get_nearby_invalid_times(missing_datetimes[1], window = days(2), init_times = c("00"))
+# get_nearby_invalid_times(missing_datetimes[1], window = days(2), init_times = c("00"), return_type = "char")
 
-missing_times = c()
-for(i in 1:length(station_names)){
-  missing_times = c(missing_times,
-                    setdiff(as.character(all_times),
-                            as.character(
-                              obs_data %>% filter(name == station_names[i]) %>% pull(valid_time)
-                            )))
-}
-#
-# get_missing_datetimes <- function(obs_datetime, by_value = "hour"){
-#
-#   all_datetimes = seq(min(obs_datetime), max(obs_datetime), by = by_value)
-#   missing_datetimes = setdiff(as.character(all_datetimes), as.character(obs_datetime))
-#
-#   #note: returns as character to avoid date issues with setdiff
-#
-#   return(missing_datetimes)
-#
-# }
-#
-# obs_datetime = obs_data %>%
-#   count(valid_time) %>%
-#   filter(n == 4) %>%
-#   pull(valid_time)
+all_bad_datetimes <- get_all_bad_datetimes(missing_datetimes,
+                                           window = days(2),
+                                           init_times = c("00" , "12"),
+                                           tz = "UTC")
 
-missing_datetimes <- get_missing_datetimes(obs_datetime) %>%
-  as.POSIXct(., format = "%Y-%m-%d %H:%M:%S", tz = "UTC")
-
-
-all_missing_times = missing_times %>%
-  unique() %>%
-  as.POSIXct(., format = "%Y-%m-%d %H:%M:%S", tz = "UTC")
-
-get_nearby_invalid_times <-function(datetime_value, window,
-                                    by_value = "hour",
-                                    init_times = 0){
-  # eg. window = days(1)
-  bad_window = seq(datetime_value - window, datetime_value, by = by_value)
-  bad_init = bad_window[which(hour(bad_window) %in% init_times)]
-  bad_init_char = as.character(bad_init)
-  return(bad_init_char)
-}
-
-# reduce this using rle
-
-a = Sys.time()
-bad_schaake_days = sapply(all_missing_times,
-                          get_nearby_invalid_times,
-                          window = days(2)) %>%
-  as.vector() %>% unique()
-b = Sys.time()
-b - a
-
-unlist_bad_schaake_days = unlist(bad_schaake_days)
-
-all_init_times = all_times[which(hour(all_times) %in% init_times)]
-
-# paste0(unlist_bad_schaake_days, " 00:00:00")
-warning("Naughty hack hard code!!! Fix me!!!")
-good_schaake_days = setdiff(as.character(all_init_times),
-                            unlist_bad_schaake_days) %>%
-  paste0(., " 00:00:00") |>
-  as.POSIXct(., format = "%Y-%m-%d %H:%M:%S", tz = "UTC") %>%
-  sort()
-
-# Kate's weirdness ends -----
+good_schaake_datetimes <- get_good_schaake_datetimes(obs_datetime,
+                                                     init_times = c("00", "12"),
+                                                     all_bad_datetimes,
+                                                     tz = "UTC")
 
 # potential init_times - keep valid_hour == 0 as all our forecasts are
 # initilised at 00 UTC

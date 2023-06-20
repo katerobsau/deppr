@@ -43,6 +43,7 @@ sample_schaake_dates <- function(num_draws, dates, date_val, window = 7){
   window_dates = seq(date_val - window, date_val + window, by = "days")
 
   years = lubridate::year(dates) %>% unique()
+
   all_window_dates <- lapply(years, function(year, window_dates){
     lubridate::year(window_dates) <- year
     return(window_dates)
