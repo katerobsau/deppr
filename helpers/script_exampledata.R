@@ -208,12 +208,13 @@ obs_data <- readRDS(obs_rds) %>%
 
 #obs_data = obs_data[-c(100, 1000:1300)]
 
-# application specific (eg. 4 stations all need dates)
+# application specific (eg. 4 stations all need the same suitable dates)
 obs_datetime = obs_data %>%
   count(valid_time) %>%
   filter(n == 4) %>%
   pull(valid_time)
 
+<<<<<<< HEAD
 missing_datetimes <- get_missing_datetimes(obs_datetime,
                                            tz = "UTC")
 
@@ -229,6 +230,12 @@ good_schaake_datetimes <- get_good_schaake_datetimes(obs_datetime,
                                                      init_times = c("00"),
                                                      all_bad_datetimes,
                                                      tz = "UTC")
+=======
+good_schaake_datetimes <- get_schaake_shuffle_dates(obs_datetime,
+                                                    window = days(2),
+                                                    init_times =c("00" , "12"),
+                                                    tz = "UTC")
+>>>>>>> d8e111bd911be64f1f4b31090e527e981a9917a3
 
 # SSh - window
 # make a template from observations
