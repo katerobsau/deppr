@@ -9,6 +9,7 @@ library(ggplot2)
 library(data.table)
 library(gamlss)
 library(scoringRules)
+library(depPPR)
 
 ################# GLOBAL VARIABLES:
 main_dir <- getwd()
@@ -18,9 +19,9 @@ main_dir <- getwd()
 
 # define file
 kepsobs_rds <- list.files(
-    path =  paste0(main_dir, "/data/"),
-    pattern = "KEPSOBS_T_2019-2021",
-    full.names = TRUE)
+  path =  paste0(main_dir, "/data/"),
+  pattern = "KEPSOBS_T_2019-2021",
+  full.names = TRUE)
 
 # import data
 kepsobs_data <- readRDS(kepsobs_rds)
@@ -47,27 +48,27 @@ test <- kepsobs_data %>%
 fits <- list()
 preds_list <- list()
 for(st in seq_along(station_names)){
-    # loop over leadtimes
-    fits_lt <- list()
-    preds_lt <- list()
-    for(lt in seq_along(lead_times)){
-        # define train/test for each station/leadtime
-        train_stlt <- train %>% filter(name == station_names[st] & leadtime == lead_times[lt])
-        test_stlt <- test %>% filter(name == station_names[st] & leadtime == lead_times[lt])
+  # loop over leadtimes
+  fits_lt <- list()
+  preds_lt <- list()
+  for(lt in seq_along(lead_times)){
+    # define train/test for each station/leadtime
+    train_stlt <- train %>% filter(name == station_names[st] & leadtime == lead_times[lt])
+    test_stlt <- test %>% filter(name == station_names[st] & leadtime == lead_times[lt])
 
-        # fit the model:
-        #   a normal distribution where we predict mu from EnsM and sigma from EnsS
-        fits_lt[[lt]] <- gamlss(T~EnsM, sigma.formula = ~EnsS,
-            data = as.data.frame(train_stlt),
-            family = NO())
+    # fit the model:
+    #   a normal distribution where we predict mu from EnsM and sigma from EnsS
+    fits_lt[[lt]] <- gamlss(T~EnsM, sigma.formula = ~EnsS,
+                            data = as.data.frame(train_stlt),
+                            family = NO())
 
-        # predict the params and combine with test set
-        preds_lt[[lt]] <- predictAll(fits_lt[[lt]], newdata = test_stlt) %>%
-        as.data.frame() %>%
-        cbind(test_stlt, .)
-    }
-    fits[[st]] <- fits_lt
-    preds_list[[st]] <- rbindlist(preds_lt)
+    # predict the params and combine with test set
+    preds_lt[[lt]] <- predictAll(fits_lt[[lt]], newdata = test_stlt) %>%
+      as.data.frame() %>%
+      cbind(test_stlt, .)
+  }
+  fits[[st]] <- fits_lt
+  preds_list[[st]] <- rbindlist(preds_lt)
 
 }
 
@@ -89,7 +90,7 @@ sample_dist <- function(params, family, quantiles, newname){
 }
 
 ppfcsts <- mapply(FUN = sample_dist, quantiles = quants, newname = quantile_methods,
-       MoreArgs = list(params = list(mu = preds$mu, sigma = preds$sigma)), SIMPLIFY = FALSE)
+                  MoreArgs = list(params = list(mu = preds$mu, sigma = preds$sigma)), SIMPLIFY = FALSE)
 
 
 # combine raw and post-processed forecasts together:
@@ -99,17 +100,17 @@ preds <- cbind(preds, ppfcsts[[1]]) %>% cbind(., ppfcsts[[2]])
 
 # crps
 preds$crpsRAW <- crps_sample(
-        y = preds$T,
-        dat = as.matrix(preds %>%
-          dplyr::select(matches(keps_members)))
-      )
+  y = preds$T,
+  dat = as.matrix(preds %>%
+                    dplyr::select(matches(keps_members)))
+)
 
 
 preds$crpsE <- crps_sample(
-        y = preds$T,
-        dat = as.matrix(preds %>%
-          dplyr::select(matches(paste0("^equally_spaced"))))
-      )
+  y = preds$T,
+  dat = as.matrix(preds %>%
+                    dplyr::select(matches(paste0("^equally_spaced"))))
+)
 
 preds$crpsR <- crps_sample(
   y = preds$T,
@@ -170,9 +171,10 @@ ggplot(preds %>%
 
 ############# Restore dependencies
 
+
 # function to get the date/times for each leadtime
 make_lt_templates <- function(start_date, leadtimes){
-  as.character(as.POSIXct(start_date, tz = "UTC") + as.numeric(leadtimes) * 60 * 60)
+  as.POSIXct(start_date, tz = "UTC") + as.numeric(leadtimes) * 60 * 60
 }
 
 
@@ -183,41 +185,68 @@ obs_rds <- list.files(
   pattern = "OBS_T_1950-2021",
   full.names = TRUE)
 
-# import data
+# import obs_data
+# this is a data.frame containing all hourly observations for all stations in station_names
+# IT_DATETIME: datetime in the format "19510102_010000_000000"
+# datetime: datetime in the format "19510102 010000"
+# valid_time: datetime in the format "1951-01-02 01:00:00"
+# DS_CODE: station number
+# name: station name
+# lat/lon
+# T: 2m temperature
 obs_data <- readRDS(obs_rds) %>%
-  mutate(valid_date = as.Date(valid_time))
-
-
-# function to make sure we only provide dates that have all dates/times available:
-check_avail_datestimes <- function(obsdf, stations, leadtimes){
-
-}
-
-# only keep cases where there are no missing values:
-countsmissing <- obs_data %>%
-  group_by(valid_time) %>%
-  summarise(ncase = length(name)) %>%
-  mutate(hour = hour(valid_time))
-
-
-missing_dates <- countsmissing %>% filter(ncase != 4)
-notmissing_dates <- countsmissing %>%
-  filter(ncase == 4) %>%
-  mutate(min2 = valid_time - 2 * 60 * 60 * 24,
-         plu2 = valid_time + 2 * 60 * 60 * 24)
+  mutate(valid_date = as.Date(valid_time),
+         valid_hour = hour(valid_time)) %>%
+  na.omit() %>%
+  unique()
 
 
 
 
-notmissing_lt_list <- mapply(FUN = make_lt_templates, start_date = countsmissing %>% filter(hour == 0) %>% pull(valid_time),
-       MoreArgs = list(leadtimes = lead_times), SIMPLIFY = FALSE)
+
+# potential init_times - keep valid_hour == 0 as all our forecasts are initilised at 00 UTC
+hist_init_times <- obs_data %>%
+  filter(valid_hour == 0) %>%
+  pull(valid_time) %>%
+  unique()
+
+# for each potential init_time, make a vector of all the leadtimes that we would need:
+hist_init_lt <- mapply(FUN = make_lt_templates,
+                       start_date = hist_init_times,
+                       MoreArgs = list(leadtimes = lead_times),
+                       SIMPLIFY = FALSE)
 
 
-lapply(notmissing_lt_list, function(x) {
-  sum(as.POSIXct(notmissing_lt_list[[1]], format = "%Y-%m-%d %H:%M:%S", tz = "UTC") %in% notmissing$valid_time)
-  }) %>% unlist() %>% sum()
+# check that all leadtimes are available for each potential init_time:
+all_valid_times <- obs_data$valid_time
 
-obs_data <- obs_data %>% filter(valid_time %in% notmissing)
+
+# this is a slow function:
+# for each of the potential init times, count how many observations there are
+# there should be length(lead_times) * length(station_names) = 48 * 4 = 192
+n.cores = 8
+clust <- makeCluster(n.cores)
+clusterExport(clust, c("hist_init_lt", "all_valid_times"))
+hist_init_lt_keep <- parLapply(clust, seq_along(hist_init_lt), function(hil){
+  sum(all_valid_times %in% hist_init_lt[[hil]])
+}) %>% unlist()
+stopCluster(clust)
+
+
+# check that we have length(lead_times) * length(station_names)
+hist_init_lt_keep_df <- data.frame(hist_init_lt = hist_init_lt_keep,
+                                potential_init = hist_init_times)
+
+# keep only the potential_init times that have the right number of observations:
+hist_init_notmissing <- hist_init_lt_keep_df %>%
+  filter(hist_init_lt == length(lead_times) * length(station_names)) %>%
+  pull(potential_init)
+
+#
+hist_initslt_notmissing <- hist_init_lt[which(hist_init_times %in% hist_init_notmissing)] %>% do.call("c", .) %>% unique()
+
+# filter obs_data
+obs_data <- obs_data %>% filter(valid_time %in% hist_initslt_notmissing)
 
 # SSh - window
 # make a template from observations
@@ -225,27 +254,31 @@ obs_data <- obs_data %>% filter(valid_time %in% notmissing)
 # what dates do we need to reshuffle: all the dates in the test set
 preds_dates <- test %>% pull(init_time) %>% unique() %>% as.Date()
 # vector of historical dates:
-hist_dates <- obs_data %>% filter(name == station_names[1] &  hour(valid_time) == 1) %>% pull(valid_time) %>% as.Date()
+#hist_dates <- obs_data %>% filter(name == station_names[1] &  hour(valid_time) == 1) %>% pull(valid_time) %>% as.Date()
+hist_dates <- hist_init_times[which(hist_init_times %in% hist_init_notmissing)]
 # get the templates:
 wind_templates <- mapply(FUN = schaake_template_window,
-       date_val = preds_dates,
-       MoreArgs = list(n_members = 11, window = 5, historical_dates = hist_dates),
-       SIMPLIFY = FALSE)
+                         date_val = preds_dates,
+                         MoreArgs = list(n_members = 11, window = 5, historical_dates = as.Date(hist_dates)),
+                         SIMPLIFY = FALSE)
 
 
 
 # returns a list where length = number of days in test set, and
 #   where each item has nrows = length(lead_times) and ncols = n_members
 wind_templates_lts <- lapply(seq_along(wind_templates), function(wt){
-  mapply(FUN = make_lt_templates, start_date = paste0(wind_templates[[wt]], " 00:00:00"), MoreArgs = list(leadtimes = lead_times))
+  mapply(FUN = make_lt_templates,
+         start_date = paste0(wind_templates[[wt]], " 00:00:00"),
+         MoreArgs = list(leadtimes = lead_times),
+         SIMPLIFY = FALSE) %>% as.data.frame(.)
 })
 
-# a function to apply run_shuffle_template to all leadtimes and stations at once:
-apply_rst <- function(ltt, pdd){
+# a function to apply run_shuffle_template to a leadtime and station combination:
+apply_rst <- function(pl){
+  pl = as.numeric(pl)
   fc_dat <- preds %>%
-    filter(init_time == preds_dates[pdd] & leadtime == lead_times[ltt])
-  tp_dates <- wind_templates_lts[[pdd]][ltt,] %>%
-    as.POSIXct(., format = "%Y-%m-%d %H:%M:%S", tz = "UTC")
+    filter(init_time == preds_dates[pl[1]] & leadtime == lead_times[pl[2]])
+  tp_dates <- wind_templates_lts[[pl[1]]][pl[2],]
   ob_dat <- obs_data %>%
     filter(valid_time %in% tp_dates) %>%
     dplyr::select(valid_time, T, name) %>%
@@ -256,17 +289,27 @@ apply_rst <- function(ltt, pdd){
                          dplyr::select(starts_with("equally_spaced")) %>% as.matrix(),
                        template = ob_dat) %>%
     magrittr::set_colnames(paste0("equally_spaced_ssh_", 1:length(quants$equally_spaced))) %>%
-    cbind(fc_dat, .)
+    cbind(fc_dat, .) %>%
+    mutate(pdd = pl[1], ltt = pl[2])
 }
 
-# loop over each day in the test set:
-preds_ssh <- lapply(seq_along(preds_dates), function(pd){
-  mapply(FUN = apply_rst, lt = seq_along(lead_times), SIMPLIFY = FALSE) %>% bind_rows()
-}) %>% bind_rows()
+# shuffle predictions for each day in the test set and each leadtime:
+preds_ssh <- lapply(1:nrow(expand.grid(seq_along(preds_dates), seq_along(lead_times))), function(nr){
+  apply_rst(pl = expand.grid(seq_along(preds_dates), seq_along(lead_times))[nr,])
+})
+
+# preds_ssh <- mapply(FUN = apply_rst,
+#                     pl = expand.grid(seq_along(preds_dates), seq_along(lead_times)),
+#                     SIMPLIFY = FALSE)
+#
+# for(ltt in seq_along(lead_times)){
+#   for(pdd in seq_along(preds_dates)){
+#     print(paste0("LTT == ", ltt, " & PDD == ", pdd))
+#     apply_rst(pl = expand.grid(seq_along(preds_dates), seq_along(lead_times))[1,])
+#   }
+# }
 
 
-
-mapply(FUN = apply_rst, lt = seq_along(lead_times), pdd = seq_along(preds_dates), SIMPLIFY = FALSE)
 
 
 # sim ssh
