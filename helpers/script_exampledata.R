@@ -92,7 +92,7 @@ preds <- rbindlist(preds_list)
 
 # make new ensemble members by drawing from the distributions:
 # draw members: random or equally spaced
-quantile_methods <- c("random", "equally_spaced")
+quantile_methods <- c("random", "equally_spaced", "equally_spaced_shift")
 quants <- mapply(FUN = get_quantiles, method = quantile_methods, MoreArgs = list(n_members = 11), SIMPLIFY = FALSE)
 
 sample_dist <- function(params, family, quantiles, newname){
@@ -108,7 +108,7 @@ ppfcsts <- mapply(FUN = sample_dist, quantiles = quants, newname = quantile_meth
 
 
 # combine raw and post-processed forecasts together:
-preds <- cbind(preds, ppfcsts[[1]]) %>% cbind(., ppfcsts[[2]])
+preds <- cbind(preds, ppfcsts[[1]]) %>% cbind(., ppfcsts[[2]])  %>% cbind(., ppfcsts[[3]])
 
 ####################################################################
 # calculate scores:
@@ -119,14 +119,18 @@ preds$crpsRAW <- crps_sample(y = preds$T,
 
 
 preds$crpsE <- crps_sample(y = preds$T,
-                           dat = as.matrix(preds %>% dplyr::select(matches(paste0("^equally_spaced")))))
+                           dat = as.matrix(preds %>% dplyr::select(matches(paste0("^equally_spaced[0-9]")))))
+
+preds$crpsES <- crps_sample(y = preds$T,
+                           dat = as.matrix(preds %>% dplyr::select(matches(paste0("^equally_spaced_shift[0-9]")))))
 
 preds$crpsR <- crps_sample(y = preds$T,
-                           dat = as.matrix(preds %>% dplyr::select(matches(paste0("^random")))))
+                           dat = as.matrix(preds %>% dplyr::select(matches(paste0("^random[0-9]")))))
 
 # mean crps improves
 mean(preds$crpsRAW)
 mean(preds$crpsE)
+mean(preds$crpsES)
 mean(preds$crpsR)
 
 
@@ -144,7 +148,7 @@ ggplot(preds %>%
 
 ggplot(preds %>%
          filter(init_time == as.Date(plotdate)) %>%
-         pivot_longer(., c(starts_with("equally_spaced")), names_to = "member", values_to = "KEPS") %>%
+         pivot_longer(., c(matches("equally_spaced[0-9]")), names_to = "member", values_to = "KEPS") %>%
          mutate(model = gsub("[0-9]", "", member))) +
   geom_line(aes(x = leadtime, y = KEPS, group = member), col = 'forestgreen') +
   geom_line(aes(x = leadtime, y = T, group = name), col = 'black') +
@@ -155,7 +159,18 @@ ggplot(preds %>%
 
 ggplot(preds %>%
          filter(init_time == as.Date(plotdate)) %>%
-         pivot_longer(., c(starts_with("random")), names_to = "member", values_to = "KEPS") %>%
+         pivot_longer(., c(matches("equally_spaced_shift[0-9]")), names_to = "member", values_to = "KEPS") %>%
+         mutate(model = gsub("[0-9]", "", member))) +
+  geom_line(aes(x = leadtime, y = KEPS, group = member), col = 'forestgreen') +
+  geom_line(aes(x = leadtime, y = T, group = name), col = 'black') +
+  facet_wrap(~model + name) +
+  theme_bw() +
+  ggtitle(plotdate)
+
+
+ggplot(preds %>%
+         filter(init_time == as.Date(plotdate)) %>%
+         pivot_longer(., c(matches("random")), names_to = "member", values_to = "KEPS") %>%
          mutate(model = gsub("[0-9]", "", member))) +
   geom_line(aes(x = leadtime, y = KEPS, group = member), col = 'forestgreen') +
   geom_line(aes(x = leadtime, y = T, group = name), col = 'black') +
@@ -167,7 +182,7 @@ ggplot(preds %>%
 # crps plot
 ggplot(preds %>%
          filter(init_time == as.Date(plotdate)) %>%
-         pivot_longer(., c(crpsRAW, crpsE), names_to = "member", values_to = "KEPS")) +
+         pivot_longer(., c(crpsRAW, crpsE, crpsES), names_to = "member", values_to = "KEPS")) +
   geom_line(aes(x = leadtime, y = KEPS, group = member, color = member)) +
   facet_wrap(~name) +
   theme_bw() +
@@ -241,7 +256,7 @@ wind_templates_lts <- lapply(seq_along(wind_templates), function(wt){
 })
 
 # Shuffle all stations and leadtimes at once:
-apply_rst <- function(pl){
+apply_rst <- function(pl, var){
   # get the forecasts in a matrix where nrows = length(station_names) and ncols = n_members
   fc_dat <- preds %>%
     filter(init_time == preds_dates[pl]) %>% arrange(init_time, valid_time, leadtime, name)
@@ -259,19 +274,24 @@ apply_rst <- function(pl){
 
     # shuffle
     run_shuffle_template(forecast = fc_dat %>%
-                           dplyr::select(starts_with("equally_spaced")) %>% as.matrix(),
+                           dplyr::select(matches(paste0(var, "[0-9]"))) %>% as.matrix(),
                          template = ob_dat %>% as.matrix()) %>%
-      magrittr::set_colnames(paste0("equally_spaced_ssh_", 1:length(quants$equally_spaced))) %>%
+      magrittr::set_colnames(paste0(var, "_ssh_", 1:length(quants[[var]]))) %>%
       cbind(fc_dat, .) %>%
       mutate(pdd = pl)
   }
 }
 
 # shuffle predictions for each day in the test set (all leadtimes and stations at once):
-preds_ssh <- lapply(seq_along(preds_dates), function(pl){
-  apply_rst(pl)
+preds_sshE <- lapply(seq_along(preds_dates), function(pl){
+  apply_rst(pl, var = "equally_spaced")
 }) %>% bind_rows()
 
+preds_sshES <- lapply(seq_along(preds_dates), function(pl){
+  apply_rst(pl, var = "equally_spaced_shift")
+}) %>% bind_rows()
+
+preds_ssh <- bind_cols(list(preds_sshE, preds_sshES %>% dplyr::select(starts_with("equally_spaced_shift_ssh"))))
 
 # scoring:
 es_df <- lapply(seq_along(preds_dates), function(pd){
@@ -280,9 +300,11 @@ es_df <- lapply(seq_along(preds_dates), function(pd){
   data.frame(date = preds_dates[pd],
              RAW = es_sample(y = yy, dat = daydat %>% dplyr::select(matches("EM[0-9]")) %>% as.matrix()),
              EMOS = es_sample(y = yy, dat = daydat %>% dplyr::select(matches("equally_spaced[0-9]")) %>% as.matrix()),
-             SSh = es_sample(y = yy, dat = daydat %>% dplyr::select(matches("equally_spaced_ssh_[0-9]")) %>% as.matrix()))
+             SShE = es_sample(y = yy, dat = daydat %>% dplyr::select(matches("equally_spaced_ssh_[0-9]")) %>% as.matrix()),
+             SShES = es_sample(y = yy, dat = daydat %>% dplyr::select(matches("equally_spaced_shift_ssh_[0-9]")) %>% as.matrix()))
 }) %>% bind_rows()
 
+colMeans(es_df[,-1])
 
 # sim ssh
 get_sim_schaake_template(forecast = preds[1,] %>% dplyr::select(starts_with("EM")),
