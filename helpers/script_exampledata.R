@@ -287,6 +287,7 @@ apply_rst <- function(pl){
     pivot_wider(., values_from = "T", names_from = "name") %>%
     dplyr::select(-valid_time) %>% as.matrix() %>% t()
 
+  # shuffle
   run_shuffle_template(forecast = fc_dat %>%
                          dplyr::select(starts_with("equally_spaced")) %>% as.matrix(),
                        template = ob_dat) %>%
