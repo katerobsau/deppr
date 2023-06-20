@@ -214,28 +214,10 @@ obs_datetime = obs_data %>%
   filter(n == 4) %>%
   pull(valid_time)
 
-<<<<<<< HEAD
-missing_datetimes <- get_missing_datetimes(obs_datetime,
-                                           tz = "UTC")
-
-# get_nearby_invalid_times(missing_datetimes[1], window = days(2), init_times = c("00"))
-# get_nearby_invalid_times(missing_datetimes[1], window = days(2), init_times = c("00"), return_type = "char")
-
-all_bad_datetimes <- get_all_bad_datetimes(missing_datetimes,
-                                           window = days(2),
-                                           init_times = c("00"),
-                                           tz = "UTC")
-
-good_schaake_datetimes <- get_good_schaake_datetimes(obs_datetime,
-                                                     init_times = c("00"),
-                                                     all_bad_datetimes,
-                                                     tz = "UTC")
-=======
 good_schaake_datetimes <- get_schaake_shuffle_dates(obs_datetime,
                                                     window = days(2),
-                                                    init_times =c("00" , "12"),
+                                                    init_times = init_hours,
                                                     tz = "UTC")
->>>>>>> d8e111bd911be64f1f4b31090e527e981a9917a3
 
 # SSh - window
 # make a template from observations
@@ -290,6 +272,16 @@ preds_ssh <- lapply(seq_along(preds_dates), function(pl){
   apply_rst(pl)
 }) %>% bind_rows()
 
+
+# scoring:
+es_df <- lapply(seq_along(preds_dates), function(pd){
+  daydat <- preds_ssh %>% filter(as.character(init_time) == preds_dates[pd])
+  yy <- daydat %>% pull(T)
+  data.frame(date = preds_dates[pd],
+             RAW = es_sample(y = yy, dat = daydat %>% dplyr::select(matches("EM[0-9]")) %>% as.matrix()),
+             EMOS = es_sample(y = yy, dat = daydat %>% dplyr::select(matches("equally_spaced[0-9]")) %>% as.matrix()),
+             SSh = es_sample(y = yy, dat = daydat %>% dplyr::select(matches("equally_spaced_ssh_[0-9]")) %>% as.matrix()))
+}) %>% bind_rows()
 
 
 # sim ssh
