@@ -277,8 +277,12 @@ wind_templates_lts <- lapply(seq_along(wind_templates), function(wt){
 apply_rst <- function(pl){
   pl = as.numeric(pl)
   # get the forecasts in a matrix where nrows = length(station_names) and ncols = n_members
+  vt <- as.POSIXct(paste0(preds_dates[pl[1]], " 00:00:00"), format = "%Y-%m-%d", tz = "UTC") + as.numeric(lead_times[pl[2]]) * 60 * 60
   fc_dat <- preds %>%
-    filter(init_time == preds_dates[pl[1]] & leadtime == lead_times[pl[2]])
+    filter(valid_time == vt & leadtime == lead_times[pl[2]])
+  # some forecasts are missing (e.g. 2020-08-17 07:00:00 and +31 hours)
+  if(nrow(fc_dat) > 0){
+    #filter(init_time == preds_dates[pl[1]] & leadtime == lead_times[pl[2]])
   tp_dates <- wind_templates_lts[[pl[1]]][pl[2],]
   # get the observations in a matrix where nrows = length(station_names) and ncols = n_members/length(template)
   ob_dat <- obs_data %>%
@@ -294,24 +298,24 @@ apply_rst <- function(pl){
     magrittr::set_colnames(paste0("equally_spaced_ssh_", 1:length(quants$equally_spaced))) %>%
     cbind(fc_dat, .) %>%
     mutate(pdd = pl[1], ltt = pl[2])
+  }
 }
 
 # shuffle predictions for each day in the test set and each leadtime:
-preds_ssh <- lapply(1:nrow(expand.grid(seq_along(preds_dates), seq_along(lead_times))), function(nr){
-  apply_rst(pl = expand.grid(seq_along(preds_dates), seq_along(lead_times))[nr,])
+# slow
+all_dates_lts <- expand.grid(pdd = seq_along(preds_dates), ltt = seq_along(lead_times))
+n.cores = 8
+clust <- makeCluster(n.cores)
+clusterExport(clust, c("preds_dates", "lead_times", "apply_rst", "preds", "obs_data",
+                       "wind_templates_lts", "lead_times", "quants", "all_dates_lts"))
+preds_ssh <- parLapply(clust, 1:nrow(all_dates_lts), function(nr){
+  library(dplyr)
+  library(depPPR)
+  apply_rst(pl = all_dates_lts[nr,])
 })
+stopCluster(clust)
 
-# preds_ssh <- mapply(FUN = apply_rst,
-#                     pl = expand.grid(seq_along(preds_dates), seq_along(lead_times)),
-#                     SIMPLIFY = FALSE)
-#
-# for(ltt in seq_along(lead_times)){
-#   for(pdd in seq_along(preds_dates)){
-#     print(paste0("LTT == ", ltt, " & PDD == ", pdd))
-#     apply_rst(pl = expand.grid(seq_along(preds_dates), seq_along(lead_times))[1,])
-#   }
-# }
-
+preds_ssh <- preds_ssh %>% bind_rows()
 
 
 
