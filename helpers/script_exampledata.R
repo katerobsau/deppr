@@ -351,51 +351,37 @@ wind_templates_lts <- lapply(seq_along(wind_templates), function(wt){
          SIMPLIFY = FALSE) %>% as.data.frame(.)
 })
 
-# a function to apply run_shuffle_template to a leadtime and station combination:
+# Shuffle all stations and leadtimes at once:
 apply_rst <- function(pl){
-  pl = as.numeric(pl)
   # get the forecasts in a matrix where nrows = length(station_names) and ncols = n_members
-  vt <- as.POSIXct(paste0(preds_dates[pl[1]], " 00:00:00"), format = "%Y-%m-%d", tz = "UTC") + as.numeric(lead_times[pl[2]]) * 60 * 60
   fc_dat <- preds %>%
-    filter(valid_time == vt & leadtime == lead_times[pl[2]])
+    filter(init_time == preds_dates[pl]) %>% arrange(init_time, valid_time, leadtime, name)
   # some forecasts are missing (e.g. 2020-08-17 07:00:00 and +31 hours)
-  if(nrow(fc_dat) > 0){
-    #filter(init_time == preds_dates[pl[1]] & leadtime == lead_times[pl[2]])
-  tp_dates <- wind_templates_lts[[pl[1]]][pl[2],]
-  # get the observations in a matrix where nrows = length(station_names) and ncols = n_members/length(template)
-  ob_dat <- obs_data %>%
-    filter(valid_time %in% tp_dates) %>%
-    dplyr::select(valid_time, T, name) %>%
-    pivot_wider(., values_from = "T", names_from = "name") %>%
-    dplyr::select(-valid_time) %>% as.matrix() %>% t()
+  if(nrow(fc_dat) == 192){
+    # get the observations in a matrix where nrows = length(station_names) and ncols = n_members/length(template)
+    ob_dat <- lapply(1:ncol(wind_templates_lts[[pl]]), function(aa){
+      tmp <- obs_data %>%
+        filter(valid_time %in% wind_templates_lts[[pl]][,aa]) %>%
+        arrange(valid_time, name) %>%
+        dplyr::select(T)
+      names(tmp) <- names(wind_templates_lts[[pl]])[aa]
+      return(tmp)
+    }) %>% bind_cols()
 
-  # shuffle
-  run_shuffle_template(forecast = fc_dat %>%
-                         dplyr::select(starts_with("equally_spaced")) %>% as.matrix(),
-                       template = ob_dat) %>%
-    magrittr::set_colnames(paste0("equally_spaced_ssh_", 1:length(quants$equally_spaced))) %>%
-    cbind(fc_dat, .) %>%
-    mutate(pdd = pl[1], ltt = pl[2])
+    # shuffle
+    run_shuffle_template(forecast = fc_dat %>%
+                           dplyr::select(starts_with("equally_spaced")) %>% as.matrix(),
+                         template = ob_dat %>% as.matrix()) %>%
+      magrittr::set_colnames(paste0("equally_spaced_ssh_", 1:length(quants$equally_spaced))) %>%
+      cbind(fc_dat, .) %>%
+      mutate(pdd = pl)
   }
 }
 
-# shuffle predictions for each day in the test set and each leadtime:
-# slow
-all_dates_lts <- expand.grid(pdd = seq_along(preds_dates), ltt = seq_along(lead_times))
-n.cores = 8
-clust <- makeCluster(n.cores)
-clusterExport(clust, c("preds_dates", "lead_times", "apply_rst", "preds", "obs_data",
-                       "wind_templates_lts", "lead_times", "quants", "all_dates_lts"))
-preds_ssh <- parLapply(clust, 1:nrow(all_dates_lts), function(nr){
-  library(dplyr)
-  library(depPPR)
-  apply_rst(pl = all_dates_lts[nr,])
-})
-stopCluster(clust)
-
-preds_ssh <- preds_ssh %>% bind_rows()
-
-
+# shuffle predictions for each day in the test set (all leadtimes and stations at once):
+preds_ssh <- lapply(seq_along(preds_dates), function(pl){
+  apply_rst(pl)
+}) %>% bind_rows()
 
 # sim ssh
 get_sim_schaake_template(forecast = preds[1,] %>% dplyr::select(starts_with("EM")),
