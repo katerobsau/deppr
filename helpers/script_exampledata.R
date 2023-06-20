@@ -202,27 +202,32 @@ obs_data <- readRDS(obs_rds) %>%
   unique()
 
 
-# application specific (eg. 4 stations all need dates)
+# application specific (eg. 4 stations all need the same suitable dates)
 obs_datetime = obs_data %>%
   count(valid_time) %>%
   filter(n == 4) %>%
   pull(valid_time)
 
-missing_datetimes <- get_missing_datetimes(obs_datetime,
-                                           tz = "UTC")
+# missing_datetimes <- get_missing_datetimes(obs_datetime,
+#                                            tz = "UTC")
+#
+# # get_nearby_invalid_times(missing_datetimes[1], window = days(2), init_times = c("00"))
+# # get_nearby_invalid_times(missing_datetimes[1], window = days(2), init_times = c("00"), return_type = "char")
+#
+# all_bad_datetimes <- get_all_bad_datetimes(missing_datetimes,
+#                                            window = days(2),
+#                                            init_times = c("00" , "12"),
+#                                            tz = "UTC")
+#
+# good_schaake_datetimes <- get_good_schaake_datetimes(obs_datetime,
+#                                                      init_times = c("00", "12"),
+#                                                      all_bad_datetimes,
+#                                                      tz = "UTC")
 
-# get_nearby_invalid_times(missing_datetimes[1], window = days(2), init_times = c("00"))
-# get_nearby_invalid_times(missing_datetimes[1], window = days(2), init_times = c("00"), return_type = "char")
-
-all_bad_datetimes <- get_all_bad_datetimes(missing_datetimes,
-                                           window = days(2),
-                                           init_times = c("00" , "12"),
-                                           tz = "UTC")
-
-good_schaake_datetimes <- get_good_schaake_datetimes(obs_datetime,
-                                                     init_times = c("00", "12"),
-                                                     all_bad_datetimes,
-                                                     tz = "UTC")
+good_schaake_datetimes <- get_schaake_shuffle_dates(obs_datetime,
+                                                    tz = "UTC",
+                                                    window = days(2),
+                                                    init_times =c("00" , "12"))
 
 # potential init_times - keep valid_hour == 0 as all our forecasts are
 # initilised at 00 UTC
