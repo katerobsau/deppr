@@ -11,34 +11,48 @@ library(gamlss)
 library(scoringRules)
 library(depPPR)
 
+####################################################################
 ################# GLOBAL VARIABLES:
+####################################################################
 
 main_dir <- getwd()
 
-################# IMPORT ALL DATA AND POST-PROCESS:
-## import all data and make df:
+station_names <- c("De Bilt", "Schiphol", "Cabauw mast", "Maastricht")
+lead_times <- sprintf("%02d", 1:48)
+keps_members <- paste0("EM", sprintf("%03d", 0:10))
 
+
+####################################################################
+################# IMPORT ALL DATA AND POST-PROCESS:
+####################################################################
 # define file
 kepsobs_rds <- list.files(
   path =  paste0(main_dir, "/data/"),
   pattern = "KEPSOBS_T_2019-2021",
   full.names = TRUE)
 
-# import data
+
+# import forecast data:
+# this is a data.frame containing all hourly observations for all stations in station_names
+# name: station name
+# hlon/hlat: lon/lat from Harmonie
+# lon/lat: lon/lat from the stations
+# init_time: initialisation time of the forecast in the format "2019-02-10 UTC"
+# leadtime: leadtime of the forecast in the format "01"
+# valid_time: datetime in the format "2019-02-10 01:00:00"
+# T: Observed 2m temperature
+# EM000-EM010: Ensemble member forecasts
 kepsobs_data <- readRDS(kepsobs_rds)
-station_names <- unique(kepsobs_data$name)
-lead_times <- unique(kepsobs_data$leadtime)
-keps_members <- kepsobs_data %>% dplyr::select(starts_with("EM")) %>% names()
 
 # make predictors for EMOS: ensemble mean and SD
 kepsobs_data$EnsM <- apply(kepsobs_data %>% dplyr::select(starts_with("EM")), 1, mean)
 kepsobs_data$EnsS <- apply(kepsobs_data %>% dplyr::select(starts_with("EM")), 1, sd)
 
-
-
-
+####################################################################
 # local PP
 # train on June-July 2020, test on August 2020
+####################################################################
+
 train <- kepsobs_data %>%
   filter(year(init_time) == 2020 & month(init_time) %in% c(6,7))
 test <- kepsobs_data %>%
@@ -78,7 +92,6 @@ preds <- rbindlist(preds_list)
 
 # make new ensemble members by drawing from the distributions:
 # draw members: random or equally spaced
-
 quantile_methods <- c("random", "equally_spaced")
 quants <- mapply(FUN = get_quantiles, method = quantile_methods, MoreArgs = list(n_members = 11), SIMPLIFY = FALSE)
 
@@ -97,27 +110,19 @@ ppfcsts <- mapply(FUN = sample_dist, quantiles = quants, newname = quantile_meth
 # combine raw and post-processed forecasts together:
 preds <- cbind(preds, ppfcsts[[1]]) %>% cbind(., ppfcsts[[2]])
 
+####################################################################
 # calculate scores:
-
+####################################################################
 # crps
-preds$crpsRAW <- crps_sample(
-  y = preds$T,
-  dat = as.matrix(preds %>%
-                    dplyr::select(matches(keps_members)))
-)
+preds$crpsRAW <- crps_sample(y = preds$T,
+                             dat = as.matrix(preds %>% dplyr::select(matches(keps_members))))
 
 
-preds$crpsE <- crps_sample(
-  y = preds$T,
-  dat = as.matrix(preds %>%
-                    dplyr::select(matches(paste0("^equally_spaced"))))
-)
+preds$crpsE <- crps_sample(y = preds$T,
+                           dat = as.matrix(preds %>% dplyr::select(matches(paste0("^equally_spaced")))))
 
-preds$crpsR <- crps_sample(
-  y = preds$T,
-  dat = as.matrix(preds %>%
-                    dplyr::select(matches(paste0("^random"))))
-)
+preds$crpsR <- crps_sample(y = preds$T,
+                           dat = as.matrix(preds %>% dplyr::select(matches(paste0("^random")))))
 
 # mean crps improves
 mean(preds$crpsRAW)
@@ -169,9 +174,9 @@ ggplot(preds %>%
   ggtitle(plotdate)
 
 
-
+####################################################################
 ############# Restore dependencies
-
+####################################################################
 
 # function to get the date/times for each leadtime
 make_lt_templates <- function(start_date, leadtimes){
@@ -332,7 +337,6 @@ obs_data <- obs_data %>% filter(valid_time %in% hist_initslt_notmissing)
 # what dates do we need to reshuffle: all the dates in the test set
 preds_dates <- test %>% pull(init_time) %>% unique() %>% as.Date()
 # vector of historical dates:
-#hist_dates <- obs_data %>% filter(name == station_names[1] &  hour(valid_time) == 1) %>% pull(valid_time) %>% as.Date()
 hist_dates <- hist_init_times[which(hist_init_times %in% hist_init_notmissing)]
 # get the templates:
 wind_templates <- mapply(FUN = schaake_template_window,
