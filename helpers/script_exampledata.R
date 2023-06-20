@@ -12,6 +12,7 @@ library(scoringRules)
 library(depPPR)
 
 ################# GLOBAL VARIABLES:
+
 main_dir <- getwd()
 
 ################# IMPORT ALL DATA AND POST-PROCESS:
@@ -200,9 +201,65 @@ obs_data <- readRDS(obs_rds) %>%
   na.omit() %>%
   unique()
 
+# Kate's weirdness ------
+# Check that there are values
+# Check for repeats
+# Need to identify missingness at each time point
+
+# len_lead_time = 48 # hours
+# needs to be valid for all locations
+
+# dates_all = intersect(dates1, dates2)
 
 
+all_times = seq(min(obs_data$valid_time), max(obs_data$valid_time), by = "hour")
 
+missing_times = c()
+for(i in 1:length(station_names)){
+  missing_times = c(missing_times,
+                    setdiff(as.character(all_times),
+                        as.character(
+                          obs_data %>% filter(name == station_names[i]) %>% pull(valid_time)
+                        )))
+}
+
+all_missing_times = missing_times %>%
+  unique() %>%
+  as.POSIXct(., format = "%Y-%m-%d %H:%M:%S", tz = "UTC")
+
+get_nearby_invalid_times <-function(datetime_value, window,
+                                    by_value = "hour",
+                                    init_times = 0){
+  # eg. window = days(1)
+  bad_window = seq(datetime_value - window, datetime_value, by = by_value)
+  bad_init = bad_window[which(hour(bad_window) %in% init_times)]
+  bad_init_char = as.character(bad_init)
+  return(bad_init_char)
+}
+
+# reduce this using rle
+
+a = Sys.time()
+bad_schaake_days = sapply(all_missing_times,
+                          get_nearby_invalid_times,
+                          window = days(2)) %>%
+  as.vector() %>% unique()
+b = Sys.time()
+b - a
+
+unlist_bad_schaake_days = unlist(bad_schaake_days)
+
+all_init_times = all_times[which(hour(all_times) %in% init_times)]
+
+# paste0(unlist_bad_schaake_days, " 00:00:00")
+warning("Naughty hack hard code!!! Fix me!!!")
+good_schaake_days = setdiff(as.character(all_init_times),
+                            unlist_bad_schaake_days) %>%
+  paste0(., " 00:00:00") |>
+  as.POSIXct(., format = "%Y-%m-%d %H:%M:%S", tz = "UTC") %>%
+  sort()
+
+# Kate's weirdness ends -----
 
 # potential init_times - keep valid_hour == 0 as all our forecasts are initilised at 00 UTC
 hist_init_times <- obs_data %>%
@@ -215,7 +272,6 @@ hist_init_lt <- mapply(FUN = make_lt_templates,
                        start_date = hist_init_times,
                        MoreArgs = list(leadtimes = lead_times),
                        SIMPLIFY = FALSE)
-
 
 # check that all leadtimes are available for each potential init_time:
 all_valid_times <- obs_data$valid_time
