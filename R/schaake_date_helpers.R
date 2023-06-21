@@ -80,26 +80,6 @@ get_good_schaake_datetimes <- function(obs_datetime,
 
 }
 
-get_schaake_shuffle_dates <- function(obs_datetime, window, init_times, ...){
-
-  missing_datetimes <- get_missing_datetimes(obs_datetime,
-                                             ... )
-
-
-  all_bad_datetimes <- get_all_bad_datetimes(missing_datetimes,
-                                             window = window,
-                                             init_times = init_times,
-                                             ... )
-
-  good_schaake_datetimes <- get_good_schaake_datetimes(obs_datetime,
-                                                       init_times = init_times,
-                                                       all_bad_datetimes,
-                                                       ... )
-
-  return(good_schaake_datetimes)
-
-}
-
 
 # missing_datetimes <- get_missing_datetimes(obs_datetime,
 #                                            tz = "UTC")
