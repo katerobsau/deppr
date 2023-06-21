@@ -23,8 +23,8 @@ keps_members <- paste0("EM", sprintf("%03d", 0:10))
 init_hours <- c("00")
 
 # methods:
-quantile_methods <- c("random", "equally_spaced", "equally_spaced_jittered", "equally_spaced_shift")
-reshuffling_methods <- c("ecc", "ssh", "simssh")
+quantile_methods <- c("R", "Q", "QJ", "QH")
+reshuffling_methods <- c("ecc", "sshw", "simssh")
 
 ####################################################################
 ################# IMPORT DATA:
@@ -65,10 +65,8 @@ quants <- mapply(FUN = get_quantiles,
                                  n_reps = nrow(kepsobs_predictions)),
                  SIMPLIFY = FALSE)
 
-
-
-
-sample_dist <- function(params, family, quantiles, newname){
+# a function to draw samples from a normal distribution:
+sample_dist <- function(params, quantiles, newname){
   sampout <- lapply(seq_along(params$mu), function(nr){
     qNO(mu = params$mu[nr], sigma = params$sigma[nr], p = as.numeric(quantiles[nr,])) %>%
       as.data.frame() %>%
@@ -134,8 +132,8 @@ ggplot(kepsobs_predictions_samples %>%
 # crps plot
 ggplot(scores_crps %>%
          filter(init_time == as.Date(plotdate)) %>%
-         pivot_longer(., c(starts_with("crps")), names_to = "member", values_to = "CRPS")) +
-  geom_line(aes(x = leadtime, y = CRPS, group = member, color = member)) +
+         pivot_longer(., c(starts_with("crps")), names_to = "sample_type", values_to = "CRPS")) +
+  geom_line(aes(x = leadtime, y = CRPS, group = sample_type, color = sample_type)) +
   facet_wrap(~name) +
   theme_bw() +
   ggtitle(plotdate) +
@@ -189,7 +187,6 @@ potential_schaake_datetimes <- get_schaake_shuffle_dates(obs_datetime,
                                                          init_times = init_hours,
                                                          tz = "UTC")
 
-# SSh - window
 # make a template from observations
 # what dates do we need to reshuffle: all the dates in the test set
 kepsobs_predictions_dates <- kepsobs_predictions_samples %>% pull(init_time) %>% unique() %>% as.Date()
@@ -217,152 +214,104 @@ sshw_template <- lapply(seq_along(kepsobs_predictions_dates), function(pd){
 }) %>% bind_rows()
 
 
-# shuffle
-kepsobs_predictions_reshuffled <- lapply(seq_along(quantile_methods), function(qm){
-  run_shuffle_template(forecast = kepsobs_predictions_samples %>%
-                         dplyr::select(matches(paste0(quantile_methods[qm], "[0-9]"))) %>% as.matrix(),
-                       template = sshw_template %>% as.matrix()) %>%
+# sshw for each quantile_method
+kepsobs_predictions_reshuff <- lapply(seq_along(quantile_methods), function(qm){
+  reshuffle_members(forecast = kepsobs_predictions_samples %>%
+                      dplyr::select(matches(paste0(quantile_methods[qm], "[0-9]"))) %>% as.matrix(),
+                    template = sshw_template %>% as.matrix()) %>%
     magrittr::set_colnames(paste0(quantile_methods[qm], "_sshw_", 1:ncol(.)))
 }) %>% bind_cols() %>%
   cbind(kepsobs_predictions_samples, .)
 
 
-# sim ssh
-
-preds_simsshE <- lapply(seq_along(preds_dates), function(pl){
-  fc <- preds %>% filter(as.character(init_time) == preds_dates[pl]) %>%
+####################################################################
+######### SIMSSh
+####################################################################
+simssh_template <- lapply(seq_along(preds_dates), function(pl){
+  fc <- kepsobs_predictions_sshw %>% filter(as.character(init_time) == preds_dates[pl]) %>%
     arrange(init_time, valid_time, leadtime, name)
-  if(nrow(fc) == 192){
-    fcall_list <- train %>%
-      arrange(init_time, valid_time, leadtime, name) %>%
-      group_split(init_time)
 
-    fc_list <- lapply(fcall_list, function(l) l %>% dplyr::select(matches("EM[0-9]")) )
-    ob_list <- lapply(fcall_list, function(l) l %>% dplyr::select(T))
-    simt <- get_sim_schaake_template(forecast = fc %>% dplyr::select(matches("EM[0-9]")),
-                                     forecast_list = fc_list,
-                                     obs_list = ob_list)
-    var = "equally_spaced"
-    run_shuffle_template(forecast = fc %>%
-                           dplyr::select(matches(paste0(var, "[0-9]"))) %>% as.matrix(),
-                         template = simt) %>%
-      magrittr::set_colnames(paste0(var, "_simssh_", 1:length(quants[[var]]))) %>%
-      cbind(fc, .) %>%
-      mutate(pdd = pl)
-  }
-}) %>% bind_rows()
+  fcall_list <- train_data %>%
+    arrange(init_time, valid_time, leadtime, name) %>%
+    group_split(init_time)
+  fc_list <- lapply(fcall_list, function(l) l %>% dplyr::select(matches("EM[0-9]")) )
+  ob_list <- lapply(fcall_list, function(l) l %>% dplyr::select(T))
+  simt <- get_sim_schaake_template(forecast = fc %>% dplyr::select(matches("EM[0-9]")),
+                                   forecast_list = fc_list,
+                                   obs_list = ob_list)
+  return(simt %>% as.data.frame())
+}) %>%
+  bind_rows() %>%
+  magrittr::set_colnames(paste0("simssh", 1:ncol(.)))
 
-preds_simsshES <- lapply(seq_along(preds_dates), function(pl){
-  fc <- preds %>% filter(as.character(init_time) == preds_dates[pl]) %>%
-    arrange(init_time, valid_time, leadtime, name)
-  if(nrow(fc) == 192){
-    fcall_list <- train %>%
-      arrange(init_time, valid_time, leadtime, name) %>%
-      group_split(init_time)
-
-    fc_list <- lapply(fcall_list, function(l) l %>% dplyr::select(matches("EM[0-9]")) )
-    ob_list <- lapply(fcall_list, function(l) l %>% dplyr::select(T))
-    simt <- get_sim_schaake_template(forecast = fc %>% dplyr::select(matches("EM[0-9]")),
-                                     forecast_list = fc_list,
-                                     obs_list = ob_list)
-    var = "equally_spaced_shift"
-    run_shuffle_template(forecast = fc %>%
-                           dplyr::select(matches(paste0(var, "[0-9]"))) %>% as.matrix(),
-                         template = simt) %>%
-      magrittr::set_colnames(paste0(var, "_simssh_", 1:length(quants[[var]]))) %>%
-      cbind(fc, .) %>%
-      mutate(pdd = pl)
-  }
-}) %>% bind_rows()
+# simssh for each quantile_method
+kepsobs_predictions_reshuff <- lapply(seq_along(quantile_methods), function(qm){
+  reshuffle_members(forecast = kepsobs_predictions_samples %>%
+                      dplyr::select(matches(paste0(quantile_methods[qm], "[0-9]"))) %>% as.matrix(),
+                    template = simssh_template %>% as.matrix()) %>%
+    magrittr::set_colnames(paste0(quantile_methods[qm], "_simssh_", 1:ncol(.)))
+}) %>% bind_cols() %>%
+  cbind(kepsobs_predictions_reshuff, .)
 
 
-preds_simssh <- bind_cols(list(preds_simsshE,
-                               preds_simsshES %>% dplyr::select(starts_with("equally_spaced_shift_simssh"))))
+####################################################################
+######### ECC
+####################################################################
+# ecc for each quantile_method
+kepsobs_predictions_reshuff <- lapply(seq_along(quantile_methods), function(qm){
+  reshuffle_members(forecast = kepsobs_predictions_samples %>%
+                      dplyr::select(matches(paste0(quantile_methods[qm], "[0-9]"))) %>% as.matrix(),
+                    template = kepsobs_predictions_samples %>%
+                      dplyr::select(matches("EM[0-9]")) %>% as.matrix()) %>%
+    magrittr::set_colnames(paste0(quantile_methods[qm], "_ecc_", 1:ncol(.)))
+}) %>% bind_cols() %>%
+  cbind(kepsobs_predictions_reshuff, .)
 
 
-preds_eccE <- lapply(seq_along(preds_dates), function(pl){
-  fc <- preds %>% filter(as.character(init_time) == preds_dates[pl]) %>%
-    arrange(init_time, valid_time, leadtime, name)
-  if(nrow(fc) == 192){
-    var = "equally_spaced"
-    run_shuffle_template(forecast = fc %>%
-                           dplyr::select(matches(paste0(var, "[0-9]"))) %>% as.matrix(),
-                         template = fc %>%
-                           dplyr::select(matches(paste0("EM", "[0-9]"))) %>% as.matrix()) %>%
-      magrittr::set_colnames(paste0(var, "_ecc_", 1:length(quants[[var]]))) %>%
-      cbind(fc, .) %>%
-      mutate(pdd = pl)
-  }
-}) %>% bind_rows()
 
-preds_eccES <- lapply(seq_along(preds_dates), function(pl){
-  fc <- preds %>% filter(as.character(init_time) == preds_dates[pl]) %>%
-    arrange(init_time, valid_time, leadtime, name)
-  if(nrow(fc) == 192){
-    var = "equally_spaced_shift"
-    run_shuffle_template(forecast = fc %>%
-                           dplyr::select(matches(paste0(var, "[0-9]"))) %>% as.matrix(),
-                         template = fc %>%
-                           dplyr::select(matches(paste0("EM", "[0-9]"))) %>% as.matrix()) %>%
-      magrittr::set_colnames(paste0(var, "_ecc_", 1:length(quants[[var]]))) %>%
-      cbind(fc, .) %>%
-      mutate(pdd = pl)
-  }
-}) %>% bind_rows()
-
-preds_ecc <- bind_cols(list(preds_eccE,
-                            preds_eccES %>% dplyr::select(starts_with("equally_spaced_shift_ecc"))))
-
-
-# scoring:
-es_df <- lapply(seq_along(kepsobs_predictions_dates), function(pd){
-  daydat <- kepsobs_predictions_reshuffled %>% filter(as.character(init_time) == kepsobs_predictions_dates[pd])
-  yy <- daydat %>% pull(T)
-  data.frame(date = kepsobs_predictions_dates[pd],
-             RAW = es_sample(y = yy, dat = daydat %>% dplyr::select(matches("EM[0-9]")) %>% as.matrix()),
-             EMOS = es_sample(y = yy, dat = daydat %>% dplyr::select(matches("equally_spaced[0-9]")) %>% as.matrix()),
-             sshwR = es_sample(y = yy, dat = daydat %>% dplyr::select(matches("random_sshw_[0-9]")) %>% as.matrix()),
-             sshwE = es_sample(y = yy, dat = daydat %>% dplyr::select(matches("equally_spaced_sshw_[0-9]")) %>% as.matrix()),
-             sshwEJ = es_sample(y = yy, dat = daydat %>% dplyr::select(matches("equally_spaced_jittered_sshw_[0-9]")) %>% as.matrix()),
-             sshwES = es_sample(y = yy, dat = daydat %>% dplyr::select(matches("equally_spaced_shift_sshw_[0-9]")) %>% as.matrix()))
-}) %>% bind_rows()
-
-colMeans(es_df[,-1])
-
-## scoring:
+####################################################################
+######### SCORING
+####################################################################
+# Energy Score:
 es_df <- lapply(seq_along(preds_dates), function(pd){
-  daydat <- preds_ssh %>% filter(as.character(init_time) == preds_dates[pd])
-  simdaydat <- preds_simssh %>% filter(as.character(init_time) == preds_dates[pd])
-  eccdaydat <- preds_ecc %>% filter(as.character(init_time) == preds_dates[pd])
+  daydat <- kepsobs_predictions_reshuff %>% filter(as.character(init_time) == preds_dates[pd])
   yy <- daydat %>% pull(T)
   data.frame(date = preds_dates[pd],
              RAW = es_sample(y = yy, dat = daydat %>% dplyr::select(matches("EM[0-9]")) %>% as.matrix()),
-             EMOS = es_sample(y = yy, dat = daydat %>% dplyr::select(matches("equally_spaced[0-9]")) %>% as.matrix()),
-             ECCE = es_sample(y = yy, dat = eccdaydat %>% dplyr::select(matches("equally_spaced_ecc_[0-9]")) %>% as.matrix()),
-             ECCES = es_sample(y = yy, dat = eccdaydat %>% dplyr::select(matches("equally_spaced_shift_ecc_[0-9]")) %>% as.matrix()),
-             SShE = es_sample(y = yy, dat = daydat %>% dplyr::select(matches("equally_spaced_ssh_[0-9]")) %>% as.matrix()),
-             SShES = es_sample(y = yy, dat = daydat %>% dplyr::select(matches("equally_spaced_shift_ssh_[0-9]")) %>% as.matrix()),
-             simSShE = es_sample(y = yy, dat = simdaydat %>% dplyr::select(matches("equally_spaced_simssh_[0-9]")) %>% as.matrix()),
-             simSShES = es_sample(y = yy, dat = simdaydat %>% dplyr::select(matches("equally_spaced_shift_simssh_[0-9]")) %>% as.matrix()))
+             EMOS = es_sample(y = yy, dat = daydat %>% dplyr::select(matches("Q[0-9]")) %>% as.matrix()),
+             ECCQ = es_sample(y = yy, dat = daydat %>% dplyr::select(matches("Q_ecc_[0-9]")) %>% as.matrix()),
+             ECCQJ = es_sample(y = yy, dat = daydat %>% dplyr::select(matches("QJ_ecc_[0-9]")) %>% as.matrix()),
+             ECCQH = es_sample(y = yy, dat = daydat %>% dplyr::select(matches("QH_ecc_[0-9]")) %>% as.matrix()),
+             SSHWQ = es_sample(y = yy, dat = daydat %>% dplyr::select(matches("Q_sshw_[0-9]")) %>% as.matrix()),
+             SSHWQJ = es_sample(y = yy, dat = daydat %>% dplyr::select(matches("QJ_sshw_[0-9]")) %>% as.matrix()),
+             SSHWQH = es_sample(y = yy, dat = daydat %>% dplyr::select(matches("QH_sshw_[0-9]")) %>% as.matrix()),
+             SIMSSHQ = es_sample(y = yy, dat = daydat %>% dplyr::select(matches("Q_simssh_[0-9]")) %>% as.matrix()),
+             SIMSSHQJ = es_sample(y = yy, dat = daydat %>% dplyr::select(matches("QJ_simssh_[0-9]")) %>% as.matrix()),
+             SIMSSHQH = es_sample(y = yy, dat = daydat %>% dplyr::select(matches("QH_simssh_[0-9]")) %>% as.matrix()))
 }) %>% bind_rows()
 
-colMeans(es_df[,-1])
 
+# Variogram Score:
 vs_df <- lapply(seq_along(preds_dates), function(pd){
-  daydat <- preds_ssh %>% filter(as.character(init_time) == preds_dates[pd])
-  simdaydat <- preds_simssh %>% filter(as.character(init_time) == preds_dates[pd])
-  eccdaydat <- preds_ecc %>% filter(as.character(init_time) == preds_dates[pd])
+  daydat <- kepsobs_predictions_reshuff %>% filter(as.character(init_time) == preds_dates[pd])
   yy <- daydat %>% pull(T)
   data.frame(date = preds_dates[pd],
              RAW = vs_sample(y = yy, dat = daydat %>% dplyr::select(matches("EM[0-9]")) %>% as.matrix()),
-             EMOS = vs_sample(y = yy, dat = daydat %>% dplyr::select(matches("equally_spaced[0-9]")) %>% as.matrix()),
-             ECCE = vs_sample(y = yy, dat = eccdaydat %>% dplyr::select(matches("equally_spaced_ecc_[0-9]")) %>% as.matrix()),
-             ECCES = vs_sample(y = yy, dat = eccdaydat %>% dplyr::select(matches("equally_spaced_shift_ecc_[0-9]")) %>% as.matrix()),
-             SShE = vs_sample(y = yy, dat = daydat %>% dplyr::select(matches("equally_spaced_ssh_[0-9]")) %>% as.matrix()),
-             SShES = vs_sample(y = yy, dat = daydat %>% dplyr::select(matches("equally_spaced_shift_ssh_[0-9]")) %>% as.matrix()),
-             simSShE = vs_sample(y = yy, dat = simdaydat %>% dplyr::select(matches("equally_spaced_simssh_[0-9]")) %>% as.matrix()),
-             simSShES = vs_sample(y = yy, dat = simdaydat %>% dplyr::select(matches("equally_spaced_shift_simssh_[0-9]")) %>% as.matrix()))
+             EMOS = vs_sample(y = yy, dat = daydat %>% dplyr::select(matches("Q[0-9]")) %>% as.matrix()),
+             ECCQ = vs_sample(y = yy, dat = daydat %>% dplyr::select(matches("Q_ecc_[0-9]")) %>% as.matrix()),
+             ECCQJ = vs_sample(y = yy, dat = daydat %>% dplyr::select(matches("QJ_ecc_[0-9]")) %>% as.matrix()),
+             ECCQH = vs_sample(y = yy, dat = daydat %>% dplyr::select(matches("QH_ecc_[0-9]")) %>% as.matrix()),
+             SSHWQ = vs_sample(y = yy, dat = daydat %>% dplyr::select(matches("Q_sshw_[0-9]")) %>% as.matrix()),
+             SSHWQJ = vs_sample(y = yy, dat = daydat %>% dplyr::select(matches("QJ_sshw_[0-9]")) %>% as.matrix()),
+             SSHWQH = vs_sample(y = yy, dat = daydat %>% dplyr::select(matches("QH_sshw_[0-9]")) %>% as.matrix()),
+             SIMSSHQ = vs_sample(y = yy, dat = daydat %>% dplyr::select(matches("Q_simssh_[0-9]")) %>% as.matrix()),
+             SIMSSHQJ = vs_sample(y = yy, dat = daydat %>% dplyr::select(matches("QJ_simssh_[0-9]")) %>% as.matrix()),
+             SIMSSHQH = vs_sample(y = yy, dat = daydat %>% dplyr::select(matches("QH_simssh_[0-9]")) %>% as.matrix()))
 }) %>% bind_rows()
 
-colMeans(vs_df[,-1])/100
 
+colMeans(es_df[,-1])
+colMeans(vs_df[,-1])
+
+ggplot(es_df %>% pivot_longer(., RAW:SIMSSHQH, names_to = "method", values_to = "ES")) + geom_line(aes(x = method, y = ES, group = date))
+ggplot(vs_df %>% pivot_longer(., RAW:SIMSSHQH, names_to = "method", values_to = "VS")) + geom_line(aes(x = method, y = VS, group = date))
