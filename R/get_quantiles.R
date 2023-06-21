@@ -44,7 +44,7 @@ get_quantiles <- function(n_members, method, n_reps = 1){
                 switch(method,
                       random = runif(n_members),
                       equally_spaced = (1:n_members)/(n_members + 1),
-                      jittered = (1:n_members - 1)/n_members + runif(n_members)/n_members,
+                      equally_spaced_jittered = (1:n_members - 1)/n_members + runif(n_members)/n_members,
                       equally_spaced_shift = (1:n_members - 0.5)/n_members),
                 n = n_reps) %>%
     matrix(., byrow = TRUE, nrow = times)
