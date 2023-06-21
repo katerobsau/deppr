@@ -1,6 +1,7 @@
 get_missing_datetimes <- function(obs_datetime, ...){
 
-  all_datetimes = seq(min(obs_datetime), max(obs_datetime), by = "hours")
+  all_datetimes = seq(min(obs_datetime, na.rm = TRUE), max(obs_datetime, na.rm = TRUE), by = "hours")
+
   missing_datetimes = setdiff(as.character(all_datetimes),
                               as.character(obs_datetime)) %>%
     as.POSIXct(format = "%Y-%m-%d %H:%M:%S", ...)
