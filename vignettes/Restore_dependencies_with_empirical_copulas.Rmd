@@ -1,0 +1,357 @@
+---
+title: "Restore dependencies with empirical copulas"
+author: "Kate Saunders and Kirien Whan"
+date: "`r Sys.Date()`"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Restore dependencies with empirical copulas}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include = FALSE}
+
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  cache = TRUE
+)
+# load packages
+library(tidyverse)
+library(lubridate)
+library(ggplot2)
+library(gamlss)
+library(scoringRules)
+library(depPPR)
+
+```
+
+We first define some global variables, including the station names, lead times, names of the raw ensemble members and the initialization time. We also define the methods we use to make draw samples from the forecast distribution and the reshuffling methods that we will use.
+
+```{r globalvariables}
+
+main_dir <- getwd()
+
+# ensemble information:
+station_names <- c("De Bilt", "Schiphol", "Cabauw mast", "Maastricht")
+lead_times <- sprintf("%02d", 1:48)
+keps_members <- paste0("EM", sprintf("%03d", 0:10))
+init_hours <- c("00")
+
+# methods:
+quantile_methods <- c("R", "Q", "QJ", "QH")
+reshuffling_methods <- c("ecc", "sshw", "simssh")
+
+# function to get the date/times for each leadtime
+make_lt_templates <- function(start_date, leadtimes){
+  as.POSIXct(start_date, tz = "UTC") + as.numeric(leadtimes) * 60 * 60
+}
+
+train_data <- kepsobs_data %>%
+  filter(year(init_time) == 2020 & month(init_time) %in% c(6,7))
+
+```
+
+There are some missing forecast times. We remove those from the data set.
+
+```{r checkcompletefcsts}
+
+# which init_times have the complete data:
+kepsobs_complete_inits <- kepsobs_predictions %>%
+  count(init_time) %>%
+  filter(n == length(station_names) * length(lead_times)) %>%
+  pull(init_time)
+
+kepsobs_predictions <- kepsobs_predictions %>% filter(init_time %in% kepsobs_complete_inits)
+
+```
+
+Now we can draw samples (i.e. new ensemble members) from a normal distribution using the methods defined in `quantile_methods` (`r quantile_methods`)
+
+```{r drawsamples}
+# make new ensemble members by drawing from the distributions:
+# draw members with each type of 'quantile_methods'
+quants <- mapply(FUN = get_quantiles,
+                 method = quantile_methods,
+                 MoreArgs = list(n_members = length(keps_members),
+                                 n_reps = nrow(kepsobs_predictions)),
+                 SIMPLIFY = FALSE)
+
+# a function to draw samples from a normal distribution:
+sample_dist <- function(params, quantiles, newname){
+  sampout <- lapply(seq_along(params$mu), function(nr){
+    qNO(mu = params$mu[nr], sigma = params$sigma[nr], p = as.numeric(quantiles[nr,])) %>%
+      as.data.frame() %>%
+      t() %>%
+      as.data.frame()
+  }) %>% bind_rows()
+  sampout %>%
+    magrittr::set_colnames(paste0(newname, 1:ncol(quantiles)))
+
+}
+
+
+# draw from the forecast distribution using the methods in quantile_methods
+kepsobs_predictions_samples <- mapply(FUN = sample_dist,
+                                      newname = quantile_methods,
+                                      quantiles = quants,
+                                      MoreArgs = list(params = list(mu = kepsobs_predictions$mu,
+                                                                    sigma = kepsobs_predictions$sigma)),
+                                      SIMPLIFY = FALSE) %>% bind_cols()
+
+
+
+# combine raw and post-processed forecasts together:
+kepsobs_predictions_samples <- cbind(kepsobs_predictions, kepsobs_predictions_samples) %>%
+  arrange(init_time, name, leadtime)
+```
+
+Now that we have new ensemble members for each forecast day, time and location, we can calculate a univariate scores, i.e. the continuous ranked probability score (CRPS).
+
+```{r crps}
+# crps
+raw_quantile_methods <- c("EM", quantile_methods)
+
+scores_crps <- lapply(raw_quantile_methods, function(qm){
+  fc_dat <- kepsobs_predictions_samples %>%
+    dplyr::select(matches(paste0("^", qm, "[0-9]")))
+  crps_sample(y = kepsobs_predictions_samples$T,
+              dat = fc_dat %>% as.matrix())
+
+
+}) %>% bind_cols() %>%
+  magrittr::set_colnames(paste0("crps_", raw_quantile_methods)) %>%
+  cbind(kepsobs_predictions_samples %>% dplyr::select(name, init_time, leadtime, valid_time), .)
+
+
+colMeans(scores_crps %>% dplyr::select(starts_with("crps")))
+
+
+```
+
+The mean CRPS shows that the most skilful marginal calibration is achieved by drawing equally spaced quantiles that are shifted by half. The next best ensemble generation method is equally spaced and jittered quantiles, followed by equally spaced and random quantiles. All methods are more skilful than the raw forecast.
+
+```{r plotforecast, fig.width=10, fig.height=10, fig.cap="Forecasts on 2020-08-30"}
+# plot example
+plotdate = "2020-08-30"
+
+ggplot(kepsobs_predictions_samples %>%
+         filter(init_time == as.Date(plotdate)) %>%
+         pivot_longer(., c(starts_with(raw_quantile_methods)), names_to = "member", values_to = "T2m") %>%
+         mutate(model = gsub("[0-9]", "", member))) +
+  geom_line(aes(x = leadtime, y = T2m, group = member), col = 'forestgreen') +
+  geom_line(aes(x = leadtime, y = T, group = name), col = 'black') +
+  facet_wrap(~model + name, ncol = length(station_names)) +
+  theme_bw() +
+  ggtitle(plotdate)
+
+
+```
+
+The CRPS for this forecast date:
+
+```{r plotcrps, fig.width=7, fig.height=7, fig.cap="CRPS on 2020-08-30"}
+# crps plot
+ggplot(scores_crps %>%
+         filter(init_time == as.Date(plotdate)) %>%
+         pivot_longer(., c(starts_with("crps")), names_to = "sample_type", values_to = "CRPS")) +
+  geom_line(aes(x = leadtime, y = CRPS, group = sample_type, color = sample_type)) +
+  facet_wrap(~name) +
+  theme_bw() +
+  ggtitle(plotdate) +
+  theme(legend.position = "bottom")
+
+
+```
+
+Now we are ready to restore the dependence structure to the forecasts. We will first use the Schaake Shuffle where we select dates within a window around the forecast date. Our data set has some missing hours. These times are not suitable for use in the template. We first remove them using the wrapper function `get_schaake_shuffle_dates`. This returns the initialsation dates of the past observations where all lead times are available. We save this as the variable `potential_schaake_datetimes`.
+
+```{r sshwtemplate1}
+# application specific (eg. 4 stations all need the same suitable dates)
+obs_datetime = obs_data %>%
+  count(valid_time) %>%
+  filter(n == 4) %>%
+  pull(valid_time)
+
+potential_schaake_datetimes <- get_schaake_shuffle_dates(obs_datetime,
+                                                         window = days(2),
+                                                         init_times = init_hours,
+                                                         tz = "UTC")
+```
+
+Once we have the vector of potential dates that can be used as the template, we must make a random selection within a window around the forecast date. The forecast dates are saved in the vector `kepsobs_predictions_dates`, and we use the function `schaake_template_window` to make the random selection. In the function `schaake_template_window`, we need to define the forecast dates (`date_val = kepsobs_predictions_dates`), the number of members we have (`n_members = 11`), the size of the window (`window = 5`), the historical dates to select from (`historical_dates = potential_schaake_datetimes`)
+
+
+```{r sshwtemplate2}
+# make a template from observations
+# what dates do we need to reshuffle: all the dates in the test set
+kepsobs_predictions_dates <- kepsobs_predictions_samples %>% pull(init_time) %>% unique() %>% as.Date()
+# get the templates:
+window_templates_initday <- mapply(FUN = schaake_template_window,
+                                   date_val = kepsobs_predictions_dates,
+                                   MoreArgs = list(n_members = 11, window = 5, historical_dates = as.Date(potential_schaake_datetimes)),
+                                   SIMPLIFY = FALSE)
+
+# returns a list where length = number of days in test set, and
+#   where each item has nrows = length(lead_times) and ncols = n_members
+window_templates_leadtimes <- lapply(seq_along(window_templates_initday), function(wt){
+  mapply(FUN = make_lt_templates,
+         start_date = paste0(window_templates_initday[[wt]], " 00:00:00"),
+         MoreArgs = list(leadtimes = lead_times),
+         SIMPLIFY = FALSE) %>% as.data.frame(.)
+})
+
+sshw_template <- lapply(seq_along(kepsobs_predictions_dates), function(pd){
+  lapply(1:ncol(window_templates_leadtimes[[pd]]), function(sd){
+    colname_tmp <- paste0("sshw", sd)
+    obs_data %>% filter(valid_time %in% window_templates_leadtimes[[pd]][,sd]) %>% arrange(name, valid_time) %>%
+      dplyr::select(T) %>% rename(.,"{colname_tmp}" := T)
+  }) %>% bind_cols()
+}) %>% bind_rows()
+
+```
+
+```{r shufflesshw}
+# sshw for each quantile_method
+kepsobs_predictions_reshuff <- lapply(seq_along(quantile_methods), function(qm){
+  reshuffle_members(forecast = kepsobs_predictions_samples %>%
+                      dplyr::select(matches(paste0(quantile_methods[qm], "[0-9]"))) %>% as.matrix(),
+                    template = sshw_template %>% as.matrix()) %>%
+    magrittr::set_colnames(paste0(quantile_methods[qm], "_sshw_", 1:ncol(.)))
+}) %>% bind_cols() %>%
+  cbind(kepsobs_predictions_samples, .)
+```
+
+```{r simsshtemplate, warning=FALSE}
+simssh_template <- lapply(seq_along(kepsobs_predictions_dates), function(pl){
+  fc <- kepsobs_predictions_reshuff %>%
+    filter(as.character(init_time) == kepsobs_predictions_dates[pl]) %>%
+    arrange(init_time, valid_time, leadtime, name)
+
+  fcall_list <- train_data %>%
+    arrange(init_time, valid_time, leadtime, name) %>%
+    group_split(init_time)
+  fc_list <- lapply(fcall_list, function(l) l %>% dplyr::select(matches("EM[0-9]")) )
+  ob_list <- lapply(fcall_list, function(l) l %>% dplyr::select(T))
+  simt <- get_sim_schaake_template(forecast = fc %>% dplyr::select(matches("EM[0-9]")),
+                                   forecast_list = fc_list,
+                                   obs_list = ob_list)
+  return(simt %>% as.data.frame())
+}) %>%
+  bind_rows() %>%
+  magrittr::set_colnames(paste0("simssh", 1:ncol(.)))
+```
+
+```{r shufflesimssh}
+# simssh for each quantile_method
+kepsobs_predictions_reshuff <- lapply(seq_along(quantile_methods), function(qm){
+  reshuffle_members(forecast = kepsobs_predictions_samples %>%
+                      dplyr::select(matches(paste0(quantile_methods[qm], "[0-9]"))) %>% as.matrix(),
+                    template = simssh_template %>% as.matrix()) %>%
+    magrittr::set_colnames(paste0(quantile_methods[qm], "_simssh_", 1:ncol(.)))
+}) %>% bind_cols() %>%
+  cbind(kepsobs_predictions_reshuff, .)
+```
+
+```{r shuffleecc}
+# ecc for each quantile_method
+kepsobs_predictions_reshuff <- lapply(seq_along(quantile_methods), function(qm){
+  reshuffle_members(forecast = kepsobs_predictions_samples %>%
+                      dplyr::select(matches(paste0(quantile_methods[qm], "[0-9]"))) %>% as.matrix(),
+                    template = kepsobs_predictions_samples %>%
+                      dplyr::select(matches("EM[0-9]")) %>% as.matrix()) %>%
+    magrittr::set_colnames(paste0(quantile_methods[qm], "_ecc_", 1:ncol(.)))
+}) %>% bind_cols() %>%
+  cbind(kepsobs_predictions_reshuff, .)
+```
+
+
+```{r energyscore}
+# Energy Score:
+es_df <- lapply(seq_along(kepsobs_predictions_dates), function(pd){
+  daydat <- kepsobs_predictions_reshuff %>% filter(as.character(init_time) == kepsobs_predictions_dates[pd])
+  yy <- daydat %>% pull(T)
+  data.frame(date = kepsobs_predictions_dates[pd],
+             RAW = es_sample(y = yy, dat = daydat %>% dplyr::select(matches("EM[0-9]")) %>% as.matrix()),
+             EMOS = es_sample(y = yy, dat = daydat %>% dplyr::select(matches("Q[0-9]")) %>% as.matrix()),
+             ECCQ = es_sample(y = yy, dat = daydat %>% dplyr::select(matches("Q_ecc_[0-9]")) %>% as.matrix()),
+             ECCQJ = es_sample(y = yy, dat = daydat %>% dplyr::select(matches("QJ_ecc_[0-9]")) %>% as.matrix()),
+             ECCQH = es_sample(y = yy, dat = daydat %>% dplyr::select(matches("QH_ecc_[0-9]")) %>% as.matrix()),
+             SSHWQ = es_sample(y = yy, dat = daydat %>% dplyr::select(matches("Q_sshw_[0-9]")) %>% as.matrix()),
+             SSHWQJ = es_sample(y = yy, dat = daydat %>% dplyr::select(matches("QJ_sshw_[0-9]")) %>% as.matrix()),
+             SSHWQH = es_sample(y = yy, dat = daydat %>% dplyr::select(matches("QH_sshw_[0-9]")) %>% as.matrix()),
+             SIMSSHQ = es_sample(y = yy, dat = daydat %>% dplyr::select(matches("Q_simssh_[0-9]")) %>% as.matrix()),
+             SIMSSHQJ = es_sample(y = yy, dat = daydat %>% dplyr::select(matches("QJ_simssh_[0-9]")) %>% as.matrix()),
+             SIMSSHQH = es_sample(y = yy, dat = daydat %>% dplyr::select(matches("QH_simssh_[0-9]")) %>% as.matrix()))
+}) %>% bind_rows()
+```
+
+
+```{r variogramscore}
+# Variogram Score:
+vs_df <- lapply(seq_along(kepsobs_predictions_dates), function(pd){
+  daydat <- kepsobs_predictions_reshuff %>% filter(as.character(init_time) == kepsobs_predictions_dates[pd])
+  yy <- daydat %>% pull(T)
+  data.frame(date = kepsobs_predictions_dates[pd],
+             RAW = vs_sample(y = yy, dat = daydat %>% dplyr::select(matches("EM[0-9]")) %>% as.matrix()),
+             EMOS = vs_sample(y = yy, dat = daydat %>% dplyr::select(matches("Q[0-9]")) %>% as.matrix()),
+             ECCQ = vs_sample(y = yy, dat = daydat %>% dplyr::select(matches("Q_ecc_[0-9]")) %>% as.matrix()),
+             ECCQJ = vs_sample(y = yy, dat = daydat %>% dplyr::select(matches("QJ_ecc_[0-9]")) %>% as.matrix()),
+             ECCQH = vs_sample(y = yy, dat = daydat %>% dplyr::select(matches("QH_ecc_[0-9]")) %>% as.matrix()),
+             SSHWQ = vs_sample(y = yy, dat = daydat %>% dplyr::select(matches("Q_sshw_[0-9]")) %>% as.matrix()),
+             SSHWQJ = vs_sample(y = yy, dat = daydat %>% dplyr::select(matches("QJ_sshw_[0-9]")) %>% as.matrix()),
+             SSHWQH = vs_sample(y = yy, dat = daydat %>% dplyr::select(matches("QH_sshw_[0-9]")) %>% as.matrix()),
+             SIMSSHQ = vs_sample(y = yy, dat = daydat %>% dplyr::select(matches("Q_simssh_[0-9]")) %>% as.matrix()),
+             SIMSSHQJ = vs_sample(y = yy, dat = daydat %>% dplyr::select(matches("QJ_simssh_[0-9]")) %>% as.matrix()),
+             SIMSSHQH = vs_sample(y = yy, dat = daydat %>% dplyr::select(matches("QH_simssh_[0-9]")) %>% as.matrix()))
+}) %>% bind_rows()
+```
+
+
+Vignettes are long form documentation commonly included in packages. Because they are part of the distribution of the package, they need to be as compact as possible. The `html_vignette` output type provides a custom style sheet (and tweaks some options) to ensure that the resulting html is as small as possible. The `html_vignette` format:
+
+- Never uses retina figures
+- Has a smaller default figure size
+- Uses a custom CSS stylesheet instead of the default Twitter Bootstrap style
+
+## Vignette Info
+
+Note the various macros within the `vignette` section of the metadata block above. These are required in order to instruct R how to build the vignette. Note that you should change the `title` field and the `\VignetteIndexEntry` to match the title of your vignette.
+
+## Styles
+
+The `html_vignette` template includes a basic CSS theme. To override this theme you can specify your own CSS in the document metadata as follows:
+
+    output: 
+      rmarkdown::html_vignette:
+        css: mystyles.css
+
+## Figures
+
+The figure sizes have been customised so that you can easily put two images side-by-side. 
+
+```{r, fig.show='hold'}
+plot(1:10)
+plot(10:1)
+```
+
+You can enable figure captions by `fig_caption: yes` in YAML:
+
+    output:
+      rmarkdown::html_vignette:
+        fig_caption: yes
+
+Then you can use the chunk option `fig.cap = "Your figure caption."` in **knitr**.
+
+## More Examples
+
+You can write math expressions, e.g. $Y = X\beta + \epsilon$, footnotes^[A footnote here.], and tables, e.g. using `knitr::kable()`.
+
+```{r, echo=FALSE, results='asis'}
+knitr::kable(head(mtcars, 10))
+```
+
+Also a quote using `>`:
+
+> "He who gives up [code] safety for [code] speed deserves neither."
+([via](https://twitter.com/hadleywickham/status/504368538874703872))

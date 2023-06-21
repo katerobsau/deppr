@@ -65,6 +65,7 @@ quants <- mapply(FUN = get_quantiles,
                                  n_reps = nrow(kepsobs_predictions)),
                  SIMPLIFY = FALSE)
 
+
 # a function to draw samples from a normal distribution:
 sample_dist <- function(params, quantiles, newname){
   sampout <- lapply(seq_along(params$mu), function(nr){
