@@ -313,5 +313,5 @@ vs_df <- lapply(seq_along(preds_dates), function(pd){
 colMeans(es_df[,-1])
 colMeans(vs_df[,-1])
 
-ggplot(es_df %>% pivot_longer(., RAW:SIMSSHQH, names_to = "method", values_to = "ES")) + geom_line(aes(x = method, y = ES, group = date))
-ggplot(vs_df %>% pivot_longer(., RAW:SIMSSHQH, names_to = "method", values_to = "VS")) + geom_line(aes(x = method, y = VS, group = date))
+# ggplot(es_df %>% pivot_longer(., RAW:SIMSSHQH, names_to = "method", values_to = "ES")) + geom_line(aes(x = method, y = ES, group = date))
+# ggplot(vs_df %>% pivot_longer(., RAW:SIMSSHQH, names_to = "method", values_to = "VS")) + geom_line(aes(x = method, y = VS, group = date))
