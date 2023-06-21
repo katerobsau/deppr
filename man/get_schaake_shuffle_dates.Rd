@@ -2,15 +2,15 @@
 % Please edit documentation in R/get_schaake_shuffle_dates.R
 \name{get_schaake_shuffle_dates}
 \alias{get_schaake_shuffle_dates}
-\title{Gets schaake shuffle dates}
+\title{Get dates for Schaake shuffle}
 \usage{
 get_schaake_shuffle_dates(obs_datetime, window, init_times, ...)
 }
 \arguments{
-\item{obs_datetime}{- a vector of dates corresponding to the observations.
+\item{obs_datetime}{- a vector of dates corresponding to all the observations.
 These should be in the date form of `"\%Y-\%m-\%d \%H:\%M:\%S"`.}
 
-\item{window}{- the length of the forecast window. This object must be specified
+\item{window}{- the length of the forecast. This input must be specified
 as a lubridate object. For example, `hours(48)` or `days(2)`.}
 
 \item{init_times}{- a vector containing strings with the forecast
@@ -18,20 +18,18 @@ initialisation times. For example, `c("00")` or `c("00", "12")`.
 These strings are converted to numeric variables internally by the function.}
 }
 \value{
-a vector of dates of the form `"\%Y-\%m-\%d \%H:\%M:\%S"` that
-are suitable for use in the Schaake shuffle.
+a vector of dates of the form `"\%Y-\%m-\%d \%H:\%M:\%S"`
+that correspond to historical dates that can be used in the Schaake shuffle.
 }
 \description{
-This function looks at the past observations and identifies dates that do not
-contain missing data and could be used in the schaake shuffle.
+This function identifies sequential observations that do not contain missing
+data and could be used in the Schaake shuffle.
 }
 \details{
-When there is missing data in the observations these dates are not suitable to be used
-in the Schaake shuffle template. Individual users
-may choose to interpolate the missing values. For simplicity however, this
-function identifies any dates and initialisation times that would contain
-missing observations, and returns a vector of only suitable dates for
-consideration.
+When there is missing data some sequences of dates will not be suitable
+for use in the Schaake shuffle. Individual users may choose to interpolate the
+missing values. For simplicity, this function identifies suitable dates that
+do not contain missing values.
 }
 \references{
 Clark, Martyn, et al. "The Schaake shuffle: A method for reconstructing

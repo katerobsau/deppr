@@ -1,4 +1,6 @@
-get_missing_datetimes <- function(obs_datetime, by = "hours" ...){
+get_missing_datetimes <- function(obs_datetime, by = "hours", ...){
+
+  warning("Reminder: function needs further development")
 
   # need to handle if there is missingness
   # handle different entry forms, eg. has NAs
@@ -50,7 +52,9 @@ get_all_bad_datetimes <- function(missing_datetimes,
                              window = window,
                              return_type = "char",
                              by = by) %>%
-    do.call("c", .)
+    as.list() %>% #not great way of dealing with this robustly
+    do.call("c", .) %>%
+    unique()
 
   if(all(as.numeric(init_times) == 0)){
     all_bad_datetimes = as.POSIXct(all_bad_datetimes, format = "%Y-%m-%d", ... )
@@ -70,7 +74,8 @@ get_good_schaake_datetimes <- function(obs_datetime,
 
   #assumes initiated on the hour
 
-  all_datetimes = seq(min(obs_datetime), max(obs_datetime), by = by)
+  all_datetimes = seq(min(obs_datetime, na.rm = TRUE),
+                      max(obs_datetime, na.rm = TRUE), by = by)
 
   init_datetimes = all_datetimes[which(hour(all_datetimes) %in% as.numeric(init_times))]
 
