@@ -7,7 +7,8 @@
 #' @param method one of the characters \code{'random'}, \code{'equally_spaced'}, \code{'Q1'},
 #'  or \code{'S'}. This character corresponds to the desired sampling method.
 #'  There are two types of equi-spaced quantiles, 'equally_spaced' and 'Q1'.
-#'
+#' @param n_reps ADD DETAILS
+
 #' @return a vector of sample quantiles
 #'
 #' @details If the \code{method} is \code{'random'} then quantiles are randomly sampled.
@@ -37,13 +38,16 @@
 #' get_quantiles(n_members = 4, method = "equally_spaced_shift")
 #' get_quantiles(n_members = 5, method = "jittered")
 #'
-get_quantiles <- function(n_members, method){
+get_quantiles <- function(n_members, method, n_reps = 1){
 
-  quantiles <- switch(method,
+  quantiles <- replicate(
+                switch(method,
                       random = runif(n_members),
                       equally_spaced = (1:n_members)/(n_members + 1),
                       jittered = (1:n_members - 1)/n_members + runif(n_members)/n_members,
-                      equally_spaced_shift = (1:n_members - 0.5)/n_members)
+                      equally_spaced_shift = (1:n_members - 0.5)/n_members),
+                n = n_reps) %>%
+    matrix(., byrow = TRUE, nrow = times)
 
   return(quantiles)
 
