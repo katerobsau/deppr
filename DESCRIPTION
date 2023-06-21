@@ -8,7 +8,9 @@ Description: Package for restoring dependence statistically post-processed univa
 License: MIT + file LICENSE
 Encoding: UTF-8
 LazyData: true
-Depends: tidyverse
+Depends: 
+    R (>= 2.10),
+    tidyverse
 Suggests: 
     knitr,
     rmarkdown,
