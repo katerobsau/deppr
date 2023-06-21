@@ -7,10 +7,9 @@
 run_shuffle_template(forecast, template)
 }
 \arguments{
-\item{forecast}{is a matrix where the columns correspond to multivariate forecasts.}
+\item{forecast}{is a matrix where the columns correspond to members with the unrealistic dependence structure, and the rows are a space or time dimension}
 
-\item{template}{is a matrix where the columns correspond to the template for
-reshuffling}
+\item{template}{is a matrix where the columns correspond to the template for dependence structure, and the rows are a space or time dimension}
 }
 \value{
 a matrix where the post-processed forecast with dependence based on
@@ -34,20 +33,22 @@ d <- 3  # number of dimensions (space x time)
 m <- 5  # number of members (sampled from the post-process forecast distribution)
 
 set.seed(1)
-eg_forecast = matrix(rnorm(d*m), nrow = 1)
+eg_forecast = matrix(rnorm(d*m), nrow = d)
 
-eg_template = matrix(rnorm(d*m), nrow = 1)
+eg_template = matrix(rnorm(d*m), nrow = d)
 
 forecast_with_dependence = run_shuffle_template(eg_forecast, eg_template)
 
 # Checking the eg_forecast inherited the order from the dependence eg_template
-order(eg_forecast)
-order(eg_template)
-order(forecast_with_dependence)
+order(eg_forecast[1,])
+order(eg_template[1,])
+order(forecast_with_dependence[1,])
 
 # Checking the eg_forecast still contains the same members after shuffling
-sort(eg_forecast)
-sort(forecast_with_dependence)
+sort(eg_forecast[1,])
+sort(forecast_with_dependence[1,])
+
+Add in the example with the data here
 
 }
 \references{
