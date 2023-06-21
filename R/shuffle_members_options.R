@@ -24,7 +24,7 @@
 #' shuffle_members(M, 'sort')
 #'
 #'@export
-shuffle_members <- function(M, type,  ...){
+shuffle_members_options <- function(M, type,  ...){
 
   M_new <- switch(type,
                 rank  = rank_members(M,  ...),
