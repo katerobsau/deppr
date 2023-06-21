@@ -80,22 +80,39 @@ get_good_schaake_datetimes <- function(obs_datetime,
 
 }
 
-get_schaake_shuffle_dates <- function(obs_datetime, tz, window, init_times){
+get_schaake_shuffle_dates <- function(obs_datetime, window, init_times, ...){
 
   missing_datetimes <- get_missing_datetimes(obs_datetime,
-                                             tz = tz)
+                                             ... )
 
 
   all_bad_datetimes <- get_all_bad_datetimes(missing_datetimes,
                                              window = window,
                                              init_times = init_times,
-                                             tz = tz)
+                                             ... )
 
   good_schaake_datetimes <- get_good_schaake_datetimes(obs_datetime,
                                                        init_times = init_times,
                                                        all_bad_datetimes,
-                                                       tz = tz)
+                                                       ... )
 
   return(good_schaake_datetimes)
 
 }
+
+
+# missing_datetimes <- get_missing_datetimes(obs_datetime,
+#                                            tz = "UTC")
+#
+# # get_nearby_invalid_times(missing_datetimes[1], window = days(2), init_times = c("00"))
+# # get_nearby_invalid_times(missing_datetimes[1], window = days(2), init_times = c("00"), return_type = "char")
+#
+# all_bad_datetimes <- get_all_bad_datetimes(missing_datetimes,
+#                                            window = days(2),
+#                                            init_times = c("00" , "12"),
+#                                            tz = "UTC")
+#
+# good_schaake_datetimes <- get_good_schaake_datetimes(obs_datetime,
+#                                                      init_times = c("00", "12"),
+#                                                      all_bad_datetimes,
+#                                                      tz = "UTC")
