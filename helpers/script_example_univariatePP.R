@@ -27,35 +27,38 @@ init_hours <- c("00")
 ################# IMPORT ALL DATA AND POST-PROCESS:
 ####################################################################
 # define file
-kepsobs_rds <- list.files(
-  path =  paste0(main_dir, "/data/"),
-  pattern = "KEPSOBS_T_2019-2021",
-  full.names = TRUE)
+# --- not needed now that the data is in the package
+# kepsobs_rds <- list.files(
+#   path =  paste0(main_dir, "/data/"),
+#   pattern = "KEPSOBS_T_2019-2021",
+#   full.names = TRUE)
+#
+# # import forecast data:
+# # this is a data.frame containing all hourly observations for all stations in station_names
+# # name: station name
+# # hlon/hlat: lon/lat from Harmonie
+# # lon/lat: lon/lat from the stations
+# # init_time: initialisation time of the forecast in the format "2019-02-10 UTC"
+# # leadtime: leadtime of the forecast in the format "01"
+# # valid_time: datetime in the format "2019-02-10 01:00:00"
+# # T: Observed 2m temperature
+# # EM000-EM010: Ensemble member forecasts
+# kepsobs_data <- readRDS(kepsobs_rds)
+#
+# # make predictors for EMOS: ensemble mean and SD
+# kepsobs_data$EnsM <- apply(kepsobs_data %>% dplyr::select(starts_with("EM")), 1, mean)
+# kepsobs_data$EnsS <- apply(kepsobs_data %>% dplyr::select(starts_with("EM")), 1, sd)
+#
+# # which init_times have the complete data:
+# kepsobs_complete_inits <- kepsobs_data %>%
+#   count(init_time) %>%
+#   filter(n == length(station_names) * length(lead_times)) %>%
+#   pull(init_time)
+#
+# kepsobs_data <- kepsobs_data %>% filter(init_time %in% kepsobs_complete_inits)
 
-# import forecast data:
-# this is a data.frame containing all hourly observations for all stations in station_names
-# name: station name
-# hlon/hlat: lon/lat from Harmonie
-# lon/lat: lon/lat from the stations
-# init_time: initialisation time of the forecast in the format "2019-02-10 UTC"
-# leadtime: leadtime of the forecast in the format "01"
-# valid_time: datetime in the format "2019-02-10 01:00:00"
-# T: Observed 2m temperature
-# EM000-EM010: Ensemble member forecasts
-kepsobs_data <- readRDS(kepsobs_rds)
-
-# make predictors for EMOS: ensemble mean and SD
-kepsobs_data$EnsM <- apply(kepsobs_data %>% dplyr::select(starts_with("EM")), 1, mean)
-kepsobs_data$EnsS <- apply(kepsobs_data %>% dplyr::select(starts_with("EM")), 1, sd)
-
-# which init_times have the complete data:
-kepsobs_complete_inits <- kepsobs_data %>%
-  count(init_time) %>%
-  filter(n == length(station_names) * length(lead_times)) %>%
-  pull(init_time)
-
-kepsobs_data <- kepsobs_data %>% filter(init_time %in% kepsobs_complete_inits)
-
+#usethis::use_data(kepsobs_data)
+# --- not needed now that the data is in the package
 
 
 ####################################################################
