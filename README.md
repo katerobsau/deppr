@@ -16,7 +16,7 @@ You can install the development version from [Github](https://github.com/katerob
 
 ``` r
 # install.packages("devtools")
-devtools::install_github("katerobsau/depPPR")
+devtools::install_github("katerobsau/deppr")
 ```
 
 <!-- ## Example -->
