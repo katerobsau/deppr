@@ -1,4 +1,4 @@
-get_missing_datetimes <- function(obs_datetime, by = "hours", ...){
+get_missing_datetimes <- function(datetime_vec, by = "hours", ...){
 
   warning("Reminder: function needs further development")
 
@@ -6,12 +6,12 @@ get_missing_datetimes <- function(obs_datetime, by = "hours", ...){
   # handle different entry forms, eg. has NAs
   # need to code for different step times
 
-  all_datetimes = seq(min(obs_datetime, na.rm = TRUE),
-                      max(obs_datetime, na.rm = TRUE),
+  all_datetimes = seq(min(datetime_vec, na.rm = TRUE),
+                      max(datetime_vec, na.rm = TRUE),
                       by = by)
 
   missing_datetimes = setdiff(as.character(all_datetimes),
-                              as.character(obs_datetime)) %>%
+                              as.character(datetime_vec)) %>%
     as.POSIXct(format = "%Y-%m-%d %H:%M:%S", ...)
 
   return(missing_datetimes)
@@ -66,7 +66,7 @@ get_all_bad_datetimes <- function(missing_datetimes,
 
 }
 
-get_good_schaake_datetimes <- function(obs_datetime,
+get_good_schaake_datetimes <- function(datetime_vec,
                                        init_times,
                                        all_bad_datetimes,
                                        by = "hours",
@@ -74,8 +74,8 @@ get_good_schaake_datetimes <- function(obs_datetime,
 
   #assumes initiated on the hour
 
-  all_datetimes = seq(min(obs_datetime, na.rm = TRUE),
-                      max(obs_datetime, na.rm = TRUE), by = by)
+  all_datetimes = seq(min(datetime_vec, na.rm = TRUE),
+                      max(datetime_vec, na.rm = TRUE), by = by)
 
   init_datetimes = all_datetimes[which(hour(all_datetimes) %in% as.numeric(init_times))]
 
@@ -99,7 +99,7 @@ get_good_schaake_datetimes <- function(obs_datetime,
 }
 
 
-# missing_datetimes <- get_missing_datetimes(obs_datetime,
+# missing_datetimes <- get_missing_datetimes(datetime_vec,
 #                                            tz = "UTC")
 #
 # # get_nearby_invalid_times(missing_datetimes[1], window = days(2), init_times = c("00"))
@@ -110,7 +110,7 @@ get_good_schaake_datetimes <- function(obs_datetime,
 #                                            init_times = c("00" , "12"),
 #                                            tz = "UTC")
 #
-# good_schaake_datetimes <- get_good_schaake_datetimes(obs_datetime,
+# good_schaake_datetimes <- get_good_schaake_datetimes(datetime_vec,
 #                                                      init_times = c("00", "12"),
 #                                                      all_bad_datetimes,
 #                                                      tz = "UTC")

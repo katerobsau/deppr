@@ -33,11 +33,10 @@
 #'
 #' @examples
 #' datetime_vec = seq(as.POSIXct("2023-01-01 00:00:00"), as.POSIXct("2023-01-10 12:00:00"), by = "hours")
-#' datetime_vec[length(datetime_vec)/2 + 1:3] = NA
-#' window = days(1)
-#' get_schaake_shuffle_dates(datetime_vec, window, init_times = "00")
-#' get_schaake_shuffle_dates(datetime_vec, window, init_times = c("00", "12))
-#'
+#' datetime_vec[days(datetime_vec) == 5] = NA
+#' get_schaake_shuffle_dates(datetime_vec, days(1), init_times = "00")
+#' get_schaake_shuffle_dates(datetime_vec, days(2), init_times = "00")
+#' get_schaake_shuffle_dates(datetime_vec, days(1), init_times = c("00", "12"))
 get_schaake_shuffle_dates <- function(datetime_vec, window, init_times, ...){
 
   missing_datetimes <- get_missing_datetimes(datetime_vec, ...)
