@@ -3,17 +3,21 @@
 #' This function identifies sequential observations that do not contain missing
 #' data and could be used in the Schaake shuffle.
 #'
-#' @param datetime_vec - a vector of dates corresponding to all the observations.
+#' @param datetime_vec A vector of dates corresponding to all the observations.
 #' These should be in the date form of `"\%Y-\%m-\%d \%H:\%M:\%S"`.
 #'
-#' @param window - the length of the forecast. This input must be specified
+#' @param window The length of the forecast window. This input must be specified
 #' as a lubridate object. For example, `hours(48)` or `days(2)`.
 #'
-#' @param init_times - a vector containing strings with the forecast
+#' @param init_times A vector containing strings with the forecast
 #' initialisation times. For example, `c("00")` or `c("00", "12")`.
 #' These strings are converted to numeric variables internally by the function.
 #'
-#' @return a vector of dates of the form `"\%Y-\%m-\%d \%H:\%M:\%S"`
+#' @param by The timestep of your weather forecast,
+#' eg `"hours"`, `"6 hours"`, `"days"`. This argument can by any increment that
+#' can be used to step between two date objects in `seq()`.
+#'
+#' @return A vector of dates of the form `"\%Y-\%m-\%d \%H:\%M:\%S"`
 #' that correspond to historical dates that can be used in the Schaake shuffle.
 #'
 #' @details
@@ -37,7 +41,9 @@
 #' get_schaake_shuffle_dates(datetime_vec, days(1), init_times = "00")
 #' get_schaake_shuffle_dates(datetime_vec, days(2), init_times = "00")
 #' get_schaake_shuffle_dates(datetime_vec, days(1), init_times = c("00", "12"))
-get_schaake_shuffle_dates <- function(datetime_vec, window, init_times, ...){
+#' get_schaake_shuffle_dates(datetime_vec, days(1), init_times = c("00", "12"), by = "6 hours")
+#'
+get_schaake_shuffle_dates <- function(datetime_vec, window, init_times, by = "hours", ...){
 
   missing_datetimes <- get_missing_datetimes(datetime_vec, ...)
   warning("Developer reminder: Add in a condition if there are no missing dates")
