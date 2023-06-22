@@ -4,7 +4,7 @@
 
 <!-- badges: start -->
 <!-- badges: end -->
-The goal of the Package deppr, or dependence (dep) Post-processing (p) in R (r), is to restore a meaningful dependence structure to statistically post-processed univariate forecasts.
+The goal of the Package deppr, or dependence (dep) post-processing (p) in R (r), is to restore a meaningful dependence structure to statistically post-processed univariate forecasts.
 
 ## Installation
 
