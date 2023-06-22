@@ -12,7 +12,7 @@ The goal of the Package deppr, or dependence (dep) Post-processing (p) in R (r),
 <!-- ``` r -->
 <!-- install.packages("depPPR") -->
 <!-- ``` -->
-You can install the development version from [Github](https://github.com/katerobsau/depPPR) <!-- And the development version from [GitHub](https://github.com/) with: -->
+You can install the development version from [Github](https://github.com/katerobsau/deppr) <!-- And the development version from [GitHub](https://github.com/) with: -->
 
 ``` r
 # install.packages("devtools")
