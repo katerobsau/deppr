@@ -65,6 +65,7 @@ quants <- mapply(FUN = get_quantiles,
                                  n_reps = nrow(kepsobs_predictions)),
                  SIMPLIFY = FALSE)
 
+
 # a function to draw samples from a normal distribution:
 sample_dist <- function(params, quantiles, newname){
   sampout <- lapply(seq_along(params$mu), function(nr){
@@ -150,10 +151,10 @@ make_lt_templates <- function(start_date, leadtimes){
 }
 
 
-#### SHOULD BE LOADED AS A DATASET?
+# --- not needed now that the data is in the package
 # import historical observations:
 # define file
-obs_rds <- "/Users/kiriwhan/surfdrive/KNMI_WFHDocs/StudentsCollabs/Kate/depPPR/data//OBS_T_1950-2021.rds"
+# obs_rds <- "/Users/kiriwhan/surfdrive/KNMI_WFHDocs/StudentsCollabs/Kate/depPPR/data//OBS_T_1950-2021.rds"
 
 # import obs_data
 # this is a data.frame containing all hourly observations for all stations in station_names
@@ -164,12 +165,14 @@ obs_rds <- "/Users/kiriwhan/surfdrive/KNMI_WFHDocs/StudentsCollabs/Kate/depPPR/d
 # name: station name
 # lat/lon
 # T: 2m temperature
-obs_data <- readRDS(obs_rds) %>%
-  mutate(valid_date = as.Date(valid_time),
-         valid_hour = hour(valid_time)) %>%
-  na.omit() %>%
-  unique()
-
+# obs_data <- readRDS(obs_rds) %>%
+#   mutate(valid_date = as.Date(valid_time),
+#          valid_hour = hour(valid_time)) %>%
+#   na.omit() %>%
+#   unique()
+#
+# #usethis::use_data(obs_data)
+# --- not needed now that the data is in the package
 
 
 
