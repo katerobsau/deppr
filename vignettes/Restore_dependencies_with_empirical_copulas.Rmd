@@ -164,6 +164,10 @@ ggplot(scores_crps %>%
 
 ```
 
+# Restore dependencies
+
+## Schaake Shuffle
+### Choosing potential template dates
 Now we are ready to restore the dependence structure to the forecasts. We will first use the Schaake Shuffle where we select dates within a window around the forecast date. Our data set has some missing hours. These times are not suitable for use in the template. We first remove them using the wrapper function `get_schaake_shuffle_dates`. This returns the initialsation dates of the past observations where all lead times are available. We save this as the variable `potential_schaake_datetimes`.
 
 ```{r sshwtemplate1}
@@ -179,7 +183,10 @@ potential_schaake_datetimes <- get_schaake_shuffle_dates(obs_datetime,
                                                          tz = "UTC")
 ```
 
-Once we have the vector of potential dates that can be used as the template, we must make a random selection within a window around the forecast date. The forecast dates are saved in the vector `kepsobs_predictions_dates`, and we use the function `schaake_template_window` to make the random selection. In the function `schaake_template_window`, we need to define the forecast dates (`date_val = kepsobs_predictions_dates`), the number of members we have (`n_members = 11`), the size of the window (`window = 5`), the historical dates to select from (`historical_dates = potential_schaake_datetimes`)
+### Making the template
+Once we have the vector of potential dates that can be used as the template, we must make a random selection within a window around the forecast date. The forecast dates are saved in the vector `kepsobs_predictions_dates`, and we use the function `schaake_template_window` to make the random selection. In the function `schaake_template_window`, we need to define the forecast dates (`date_val = kepsobs_predictions_dates`), the number of members we have (`n_members = 11`), the size of the window (`window = 5`), the historical dates to select from (`historical_dates = potential_schaake_datetimes`).
+
+The function `schaake_template_window` returns a vector of dates that we can use for the dependence template. We need to use the same template for all stations and consecutive times for each lead time in the forecast period. We use the function `make_lt_templates` to return the forecast lead times from the random template dates returned by `schaake_template_window`. This returns a list with the length of days in the test set (in this example: `length(kepsobs_predictions_dates) = 30`). Each element of the list is a data.frame of times where `nrows = length(lead_times)` and `ncols = n_members`. Finally, we make the dependence template by extacting the observations for each location and time in the template. This makes the object `sshw_template` which has the dimensions:days in the test set * number of stations * number of lead times (`length(kepsobs_predictions_dates) * length(station_names) * length(lead_times)`).
 
 
 ```{r sshwtemplate2}
@@ -211,6 +218,11 @@ sshw_template <- lapply(seq_along(kepsobs_predictions_dates), function(pd){
 
 ```
 
+### Reshuffling
+
+We can restore dependencies in the post-processed forecasts using the function `reshuffle_members`. To do this we loop over `quantile_methods` so that we can restore dependencies to each method individually. We provide the post-processed forecasts and the template to `reshuffle_members`. These two data.frames must have the same dimensions.
+
+
 ```{r shufflesshw}
 # sshw for each quantile_method
 kepsobs_predictions_reshuff <- lapply(seq_along(quantile_methods), function(qm){
@@ -220,7 +232,10 @@ kepsobs_predictions_reshuff <- lapply(seq_along(quantile_methods), function(qm){
     magrittr::set_colnames(paste0(quantile_methods[qm], "_sshw_", 1:ncol(.)))
 }) %>% bind_cols() %>%
   cbind(kepsobs_predictions_samples, .)
+
 ```
+
+## Sim Schaake
 
 ```{r simsshtemplate, warning=FALSE}
 simssh_template <- lapply(seq_along(kepsobs_predictions_dates), function(pl){
@@ -306,52 +321,3 @@ vs_df <- lapply(seq_along(kepsobs_predictions_dates), function(pd){
              SIMSSHQH = vs_sample(y = yy, dat = daydat %>% dplyr::select(matches("QH_simssh_[0-9]")) %>% as.matrix()))
 }) %>% bind_rows()
 ```
-
-
-Vignettes are long form documentation commonly included in packages. Because they are part of the distribution of the package, they need to be as compact as possible. The `html_vignette` output type provides a custom style sheet (and tweaks some options) to ensure that the resulting html is as small as possible. The `html_vignette` format:
-
-- Never uses retina figures
-- Has a smaller default figure size
-- Uses a custom CSS stylesheet instead of the default Twitter Bootstrap style
-
-## Vignette Info
-
-Note the various macros within the `vignette` section of the metadata block above. These are required in order to instruct R how to build the vignette. Note that you should change the `title` field and the `\VignetteIndexEntry` to match the title of your vignette.
-
-## Styles
-
-The `html_vignette` template includes a basic CSS theme. To override this theme you can specify your own CSS in the document metadata as follows:
-
-    output: 
-      rmarkdown::html_vignette:
-        css: mystyles.css
-
-## Figures
-
-The figure sizes have been customised so that you can easily put two images side-by-side. 
-
-```{r, fig.show='hold'}
-plot(1:10)
-plot(10:1)
-```
-
-You can enable figure captions by `fig_caption: yes` in YAML:
-
-    output:
-      rmarkdown::html_vignette:
-        fig_caption: yes
-
-Then you can use the chunk option `fig.cap = "Your figure caption."` in **knitr**.
-
-## More Examples
-
-You can write math expressions, e.g. $Y = X\beta + \epsilon$, footnotes^[A footnote here.], and tables, e.g. using `knitr::kable()`.
-
-```{r, echo=FALSE, results='asis'}
-knitr::kable(head(mtcars, 10))
-```
-
-Also a quote using `>`:
-
-> "He who gives up [code] safety for [code] speed deserves neither."
-([via](https://twitter.com/hadleywickham/status/504368538874703872))

@@ -318,3 +318,28 @@ colMeans(vs_df[,-1])
 
 # ggplot(es_df %>% pivot_longer(., RAW:SIMSSHQH, names_to = "method", values_to = "ES")) + geom_line(aes(x = method, y = ES, group = date))
 # ggplot(vs_df %>% pivot_longer(., RAW:SIMSSHQH, names_to = "method", values_to = "VS")) + geom_line(aes(x = method, y = VS, group = date))
+
+
+# Variogram Score:
+vs_df <- lapply(seq_along(preds_dates), function(pd){
+  lapply(seq_along(lead_times), function(lt){
+  daydat <- kepsobs_predictions_reshuff %>% filter(as.character(init_time) == preds_dates[pd] & leadtime == lead_times[lt])
+  yy <- daydat %>% pull(T)
+  data.frame(date = preds_dates[pd],
+             leadtime = lead_times[lt],
+             RAW = vs_sample(y = yy, dat = daydat %>% dplyr::select(matches("EM[0-9]")) %>% as.matrix()),
+             EMOS = vs_sample(y = yy, dat = daydat %>% dplyr::select(matches("Q[0-9]")) %>% as.matrix()),
+             ECCQ = vs_sample(y = yy, dat = daydat %>% dplyr::select(matches("Q_ecc_[0-9]")) %>% as.matrix()),
+             ECCQJ = vs_sample(y = yy, dat = daydat %>% dplyr::select(matches("QJ_ecc_[0-9]")) %>% as.matrix()),
+             ECCQH = vs_sample(y = yy, dat = daydat %>% dplyr::select(matches("QH_ecc_[0-9]")) %>% as.matrix()),
+             SSHWQ = vs_sample(y = yy, dat = daydat %>% dplyr::select(matches("Q_sshw_[0-9]")) %>% as.matrix()),
+             SSHWQJ = vs_sample(y = yy, dat = daydat %>% dplyr::select(matches("QJ_sshw_[0-9]")) %>% as.matrix()),
+             SSHWQH = vs_sample(y = yy, dat = daydat %>% dplyr::select(matches("QH_sshw_[0-9]")) %>% as.matrix()),
+             SIMSSHQ = vs_sample(y = yy, dat = daydat %>% dplyr::select(matches("Q_simssh_[0-9]")) %>% as.matrix()),
+             SIMSSHQJ = vs_sample(y = yy, dat = daydat %>% dplyr::select(matches("QJ_simssh_[0-9]")) %>% as.matrix()),
+             SIMSSHQH = vs_sample(y = yy, dat = daydat %>% dplyr::select(matches("QH_simssh_[0-9]")) %>% as.matrix()))
+}) %>% bind_rows()
+}) %>% bind_rows()
+
+vs_df %>% dplyr::select(-date) %>% group_by(leadtime) %>% summarise_all(mean) %>%
+  apply(., 1, function(x) which.min(x[-1]) == 1) %>% data.frame(leadtime = lead_times, minRaw = .)
