@@ -1,10 +1,10 @@
 
 <!-- README.md is generated from README.Rmd. Please edit that file -->
-# depPPR
+# deppr
 
 <!-- badges: start -->
 <!-- badges: end -->
-The goal of the Package depPPR, or dependence (dep) Post-processing (PP) in R (R), is to restore dependence to statistically post-processed univariate forecasts.
+The goal of the Package deppr, or dependence (dep) Post-processing (p) in R (r), is to restore a meaningful dependence structure to statistically post-processed univariate forecasts.
 
 ## Installation
 
@@ -12,11 +12,11 @@ The goal of the Package depPPR, or dependence (dep) Post-processing (PP) in R (R
 <!-- ``` r -->
 <!-- install.packages("depPPR") -->
 <!-- ``` -->
-You can install the development version from [Github](https://github.com/katerobsau/depPPR) <!-- And the development version from [GitHub](https://github.com/) with: -->
+You can install the development version from [Github](https://github.com/katerobsau/deppr) <!-- And the development version from [GitHub](https://github.com/) with: -->
 
 ``` r
 # install.packages("devtools")
-devtools::install_github("katerobsau/depPPR")
+devtools::install_github("katerobsau/deppr")
 ```
 
 <!-- ## Example -->

@@ -1,0 +1,12 @@
+citHeader("To cite depPPR in publications use:")
+
+citEntry(
+  entry    = "Misc",
+  title    = "deppr: Dependence restoration of statistical post-processed weather forecasts in R",
+  author   = "Kate R. Saunders and K. Whan",
+  year     = "2023",
+  url      = "https://github.com/katerobsau/depPPR",
+  textVersion = paste(
+
+  )
+)

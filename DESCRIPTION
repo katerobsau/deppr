@@ -1,19 +1,21 @@
-Package: depPPR
+Package: deppR
 Type: Package
-Title: depPPR - Dependence Post-processing in R
+Title: deppR - Dependence restoration of statistical post-processed weather forecasts in R
 Version: 0.1.0
-Authors@R: c(person("Kate", "Saunders", email = "K.R.Saunders@tudeflt.nl", role = c("aut", "cre")), person("Kirien", "Whan", email = "Kirien.Whan@knmi.nl", role = "aut"))
-Maintainer: Kate Saunders <K.R.Saunders@tudelft.nl>
-Description: Package for restoring dependence statistically post-processed univariate forecasts.
+Authors@R: c(person("Kate", "Saunders", email = "kate.saunders@monash.edu", role = c("aut", "cre")), person("Kirien", "Whan", email = "Kirien.Whan@knmi.nl", role = "aut"))
+Maintainer: Kate Saunders <kate.saunders@monash.edu>
+Description: Package for restoring a meaningful dependence structure to statistically post-processed univariate forecasts.
 License: MIT + file LICENSE
 Encoding: UTF-8
 LazyData: true
-Depends: tidyverse
+Depends: 
+    R (>= 2.10),
+    tidyverse
 Suggests: 
     knitr,
     rmarkdown,
     testthat (>= 2.1.0)
-RoxygenNote: 7.1.1
+RoxygenNote: 7.2.3
 VignetteBuilder: knitr
 Imports: 
     foreach
