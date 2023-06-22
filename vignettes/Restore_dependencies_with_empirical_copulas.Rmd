@@ -262,7 +262,7 @@ simssh_template <- lapply(seq_along(kepsobs_predictions_dates), function(pl){
 ```
 
 ### Re-shuffling
-
+We use the function `reshuffle_members` as described earlier.
 
 ```{r shufflesimssh}
 # simssh for each quantile_method
@@ -274,6 +274,12 @@ kepsobs_predictions_reshuff <- lapply(seq_along(quantile_methods), function(qm){
 }) %>% bind_cols() %>%
   cbind(kepsobs_predictions_reshuff, .)
 ```
+
+## Ensemble copula coupling (ECC)
+### Re-shuffling
+
+We can use ECC with the same function: `reshuffle_members`. Instead of providing a template from observations, we use the raw ensemble members as the template.
+
 
 ```{r shuffleecc}
 # ecc for each quantile_method
@@ -287,6 +293,10 @@ kepsobs_predictions_reshuff <- lapply(seq_along(quantile_methods), function(qm){
   cbind(kepsobs_predictions_reshuff, .)
 ```
 
+# Verification
+## Energy score
+
+We calculate the energy score for each date separately over the spatial (`length(station_names)`) and temporal dimensions (`length(lead_times)`).
 
 ```{r energyscore}
 # Energy Score:
@@ -308,6 +318,9 @@ es_df <- lapply(seq_along(kepsobs_predictions_dates), function(pd){
 }) %>% bind_rows()
 ```
 
+## Variogram score
+
+We calculate the variogram score for each date separately over the spatial (`length(station_names)`) and temporal dimensions (`length(lead_times)`).
 
 ```{r variogramscore}
 # Variogram Score:
