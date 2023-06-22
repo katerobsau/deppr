@@ -218,9 +218,9 @@ sshw_template <- lapply(seq_along(kepsobs_predictions_dates), function(pd){
 
 ```
 
-### Reshuffling
+### Re-shuffling
 
-We can restore dependencies in the post-processed forecasts using the function `reshuffle_members`. To do this we loop over `quantile_methods` so that we can restore dependencies to each method individually. We provide the post-processed forecasts and the template to `reshuffle_members`. These two data.frames must have the same dimensions.
+We can restore dependencies in the post-processed forecasts using the function `reshuffle_members`. To do this we loop over `quantile_methods` so that we can restore dependencies to each method individually. We provide the post-processed forecasts and the template to `reshuffle_members`. These two data.frames must have the same dimensions. The function returns a data.frame of re-shuffled post-processed forecasts, which we bind together with the original test data set.
 
 
 ```{r shufflesshw}
@@ -236,6 +236,10 @@ kepsobs_predictions_reshuff <- lapply(seq_along(quantile_methods), function(qm){
 ```
 
 ## Sim Schaake
+### Making the template
+
+
+
 
 ```{r simsshtemplate, warning=FALSE}
 simssh_template <- lapply(seq_along(kepsobs_predictions_dates), function(pl){
@@ -256,6 +260,9 @@ simssh_template <- lapply(seq_along(kepsobs_predictions_dates), function(pl){
   bind_rows() %>%
   magrittr::set_colnames(paste0("simssh", 1:ncol(.)))
 ```
+
+### Re-shuffling
+
 
 ```{r shufflesimssh}
 # simssh for each quantile_method
