@@ -37,6 +37,8 @@
 #' get_schaake_shuffle_dates(datetime_vec, days(1), init_times = "00")
 #' get_schaake_shuffle_dates(datetime_vec, days(2), init_times = "00")
 #' get_schaake_shuffle_dates(datetime_vec, days(1), init_times = c("00", "12"))
+#' get_schaake_shuffle_dates(datetime_vec, days(1), init_times = c("00", "12"), by = "6 hours")
+#'
 get_schaake_shuffle_dates <- function(datetime_vec, window, init_times, ...){
 
   missing_datetimes <- get_missing_datetimes(datetime_vec, ...)
